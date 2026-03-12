@@ -10,6 +10,7 @@ FACTOR_FOX = 1.11
 def buscar_tabla(veces_uma):
 
     for li, ls, cuantia, incremento in TABLA_LEY73:
+
         if li <= veces_uma <= ls:
             return cuantia, incremento
 
@@ -24,62 +25,62 @@ def calcular_pension_ley73(
         inflacion,
         esposa=False):
 
-    anio_actual = datetime.datetime.now().year
+    anio = datetime.datetime.now().year
+    UMA = obtener_uma(anio)
 
-    UMA = obtener_uma(anio_actual)
-
+    # salario en UMA
     veces_uma = salario_diario / UMA
 
     cuantia_pct, incremento_pct = buscar_tabla(veces_uma)
 
-    # -------------------------
+    # -----------------------
     # CUANTIA BASICA
-    # -------------------------
+    # -----------------------
 
     cuantia_basica = salario_diario * (cuantia_pct / 100)
 
-    # -------------------------
-    # INCREMENTOS POR SEMANAS
-    # -------------------------
+    # -----------------------
+    # INCREMENTOS
+    # -----------------------
 
     semanas_excedentes = max(semanas - 500, 0)
 
-    incrementos = math.floor(semanas_excedentes / 52)
+    años_excedentes = math.floor(semanas_excedentes / 52)
 
-    incremento_total = cuantia_basica * (incremento_pct / 100) * incrementos
+    incremento_total = salario_diario * (incremento_pct / 100) * años_excedentes
 
     pension_diaria = cuantia_basica + incremento_total
 
-    # -------------------------
+    # -----------------------
     # FACTOR FOX
-    # -------------------------
+    # -----------------------
 
     pension_diaria *= FACTOR_FOX
 
-    # -------------------------
+    # -----------------------
     # FACTOR EDAD
-    # -------------------------
+    # -----------------------
 
     factor = FACTORES_EDAD.get(edad_retiro, 1)
 
     pension_diaria *= factor
 
-    # -------------------------
-    # ASIGNACION ESPOSA
-    # -------------------------
+    # -----------------------
+    # ESPOSA
+    # -----------------------
 
     if esposa:
         pension_diaria *= 1.15
 
-    # -------------------------
+    # -----------------------
     # MENSUAL
-    # -------------------------
+    # -----------------------
 
     pension_mensual = pension_diaria * 30
 
-    # -------------------------
+    # -----------------------
     # PROYECCION
-    # -------------------------
+    # -----------------------
 
     años = edad_retiro - edad_actual
 
