@@ -1,34 +1,83 @@
-from Config.parametros import *
+from Config.parametros import UMA_ACTUAL, CRECIMIENTO_UMA, FACTORES_EDAD
+from Config.tablas_imss import TABLA_CUANTIA
 
-def calcular_pension_base(
-    salario_promedio,
-    semanas,
+
+def obtener_porcentaje_cuantia(salario_uma):
+
+    for minimo, maximo, porcentaje in TABLA_CUANTIA:
+
+        if salario_uma >= minimo and salario_uma < maximo:
+            return porcentaje
+
+    return 0.20
+
+
+def calcular_pension_ley73(
+    salario_diario,
+    semanas_cotizadas,
+    edad_actual,
     edad_retiro,
-    esposa=True
+    inflacion_anual,
+    esposa=False
 ):
 
-    factor_edad = FACTOR_EDAD.get(edad_retiro, 0.75)
+    salario_uma = salario_diario / UMA_ACTUAL
 
-    # Cuantía básica
-    cuantia_basica = salario_promedio * CUANTIA_BASICA * DIAS_POR_ANIO
+    porcentaje_cuantia = obtener_porcentaje_cuantia(salario_uma)
 
-    # Incrementos por semanas adicionales
-    anios_extra = max(0, (semanas - 500) / SEMANAS_POR_ANIO)
+    cuantia_basica = salario_diario * porcentaje_cuantia
 
-    incremento = salario_promedio * INCREMENTO_ANUAL * DIAS_POR_ANIO * anios_extra
+    semanas_excedentes = max(semanas_cotizadas - 500, 0)
 
-    pension_anual = cuantia_basica + incremento
+    incremento = (semanas_excedentes / 52) * 0.015
 
-    # Asignación por esposa
+    pension_base = cuantia_basica * (1 + incremento)
+
+    factor_edad = FACTORES_EDAD.get(edad_retiro, 1)
+
+    pension = pension_base * factor_edad
+
     if esposa:
-        pension_anual *= (1 + ASIGNACION_ESPOSA)
+        pension *= 1.15
 
-    # Decreto Fox
-    pension_anual *= (1 + DECRETO_FOX)
+    pension_mensual = pension * 30
 
-    # Ajuste por edad
-    pension_anual *= factor_edad
+    años_para_retiro = edad_retiro - edad_actual
 
-    pension_mensual = pension_anual / MESES_POR_ANIO
+    pension_futura = pension_mensual * ((1 + inflacion_anual) ** años_para_retiro)
 
-    return round(pension_mensual, 2)
+    return pension_mensual, pension_futura
+
+
+def proyectar_pension_anual(
+    pension_inicial,
+    edad_actual,
+    edad_retiro,
+    inflacion
+):
+
+    proyeccion = []
+
+    pension = pension_inicial
+
+    for edad in range(edad_actual, edad_retiro + 1):
+
+        proyeccion.append({
+            "Edad": edad,
+            "Pension_mensual": pension
+        })
+
+        pension = pension * (1 + inflacion)
+
+    return proyeccion
+
+
+def proyectar_uma(uma_actual, crecimiento, años):
+
+    uma = uma_actual
+
+    for i in range(años):
+
+        uma = uma * (1 + crecimiento)
+
+    return uma
