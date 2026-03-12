@@ -1,28 +1,38 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 
-from Core.pension_imss import (
-    calcular_pension_ley73
+from Core.pension_imss import calcular_pension_ley73
+from Core.proyeccion_pension import proyectar_pension
+
+
+st.set_page_config(
+    page_title="Simulador Pensión IMSS Ley 73",
+    page_icon="📊",
+    layout="centered"
 )
 
-st.set_page_config(page_title="OptiPensión 73", page_icon="💰")
+st.title("Simulador de Pensión IMSS - Ley 73")
 
-st.title("💰 OptiPensión 73")
-st.subheader("Simulador de pensión IMSS Ley 73")
+st.write("Herramienta de estimación de pensión conforme a reglas del IMSS.")
 
 st.divider()
 
+# =========================
+# ENTRADAS
+# =========================
+
+st.subheader("Datos del trabajador")
+
 salario = st.number_input(
-    "Salario promedio diario",
-    min_value=100.0,
-    max_value=5000.0,
-    value=959.15
+    "Salario diario promedio",
+    min_value=0.0,
+    value=965.0
 )
 
 semanas = st.number_input(
     "Semanas cotizadas",
     min_value=500,
-    max_value=3000,
     value=1315
 )
 
@@ -33,25 +43,31 @@ edad_actual = st.number_input(
     value=57
 )
 
-edad_retiro = st.selectbox(
+edad_retiro = st.number_input(
     "Edad de retiro",
-    [60, 61, 62, 63, 64, 65]
+    min_value=60,
+    max_value=65,
+    value=60
 )
 
 inflacion = st.number_input(
-    "Inflación anual estimada (%)",
+    "Inflación anual (%)",
     min_value=0.0,
-    max_value=15.0,
-    value=4.5
+    max_value=20.0,
+    value=4.0
 ) / 100
 
-esposa = st.checkbox("Asignación por esposa")
+esposa = st.checkbox("Tiene esposa dependiente")
 
 st.divider()
 
+# =========================
+# CALCULO
+# =========================
+
 if st.button("Calcular pensión"):
 
-    pension_actual, pension_futura = calcular_pension_ley73(
+    pension_hoy, pension_futura = calcular_pension_ley73(
         salario,
         semanas,
         edad_actual,
@@ -60,27 +76,59 @@ if st.button("Calcular pensión"):
         esposa
     )
 
-    st.success(f"Pensión estimada mensual hoy: ${pension_actual:,.2f}")
+    st.subheader("Resultado")
 
-    st.info(
-        f"Pensión estimada al retiro ajustada por inflación: ${pension_futura:,.2f}"
+    col1, col2 = st.columns(2)
+
+    col1.metric(
+        "Pensión estimada hoy",
+        f"${pension_hoy:,.2f}"
+    )
+
+    col2.metric(
+        f"Pensión estimada a los {edad_retiro} años",
+        f"${pension_futura:,.2f}"
     )
 
     st.divider()
 
-    st.subheader("Proyección anual de pensión")
+    # =========================
+    # PROYECCION
+    # =========================
 
-    proyeccion = proyectar_pension_anual(
-        pension_actual,
-        edad_actual,
-        edad_retiro,
-        inflacion
+    st.subheader("Proyección de pensión por inflación")
+
+    años = edad_retiro - edad_actual
+
+    datos = proyectar_pension(
+        pension_hoy,
+        inflacion,
+        años
     )
 
-    df = pd.DataFrame(proyeccion)
+    lista_años = list(range(edad_actual, edad_retiro + 1))
 
-    st.dataframe(df)
+    df = pd.DataFrame({
+        "Edad": lista_años,
+        "Pensión mensual": datos
+    })
 
-    st.line_chart(
-        df.set_index("Edad")["Pension_mensual"]
+    fig = px.line(
+        df,
+        x="Edad",
+        y="Pensión mensual",
+        markers=True,
+        title="Proyección de pensión hasta el retiro"
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+    st.divider()
+
+    st.subheader("Tabla de proyección")
+
+    st.dataframe(
+        df.style.format({
+            "Pensión mensual": "${:,.2f}"
+        })
     )
