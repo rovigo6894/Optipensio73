@@ -1,23 +1,7 @@
 from Config.parametros import FACTORES_EDAD
-from Config.tabla_ley73 import TABLA_LEY73
 import math
 
-UMA = 117.31
-
-
-def buscar_tabla(veces_uma):
-
-    # Si es mayor a 6 UMA, los porcentajes ya no cambian
-    if veces_uma >= 6:
-        return 13.0, 2.45
-
-    # Si es menor a 6 UMA, se busca en la tabla
-    for li, ls, cuantia, incremento in TABLA_LEY73:
-
-        if li <= veces_uma <= ls:
-            return cuantia, incremento
-
-    return TABLA_LEY73[-1][2], TABLA_LEY73[-1][3]
+UMA = 108.54
 
 
 def calcular_pension_ley73(
@@ -31,49 +15,42 @@ def calcular_pension_ley73(
     # salario en UMA
     veces_uma = salario_diario / UMA
 
-    cuantia_pct, incremento_pct = buscar_tabla(veces_uma)
+    # porcentajes para >6 UMA
+    cuantia_pct = 0.13
+    incremento_pct = 0.0245
 
-    # ----------------------
-    # CUANTIA BASICA
-    # ----------------------
+    # cuantía básica diaria
+    cuantia_diaria = salario_diario * cuantia_pct
 
-    cuantia_basica = salario_diario * (cuantia_pct / 100)
+    # años excedentes
+    años_excedentes = (semanas - 500) / 52
 
-    # ----------------------
-    # INCREMENTOS
-    # ----------------------
+    # cuantía anual
+    cuantia_anual = cuantia_diaria * 365
 
-    semanas_excedentes = max(semanas - 500, 0)
+    # incremento anual
+    incremento_anual = salario_diario * incremento_pct * 365
 
-    años_excedentes = math.floor(semanas_excedentes / 52)
-
-    incremento_anual = salario_diario * (incremento_pct / 100)
-
+    # incremento total
     incremento_total = incremento_anual * años_excedentes
 
-    pension_diaria = cuantia_basica + incremento_total
+    total = cuantia_anual + incremento_total
 
-    # ----------------------
-    # FACTOR EDAD
-    # ----------------------
+    # asignación esposa
+    if esposa:
+        total *= 1.15
 
+    # factor fox
+    total *= 1.11
+
+    # factor edad
     factor = FACTORES_EDAD.get(edad_retiro, 1)
 
-    pension_diaria *= factor
+    total *= factor
 
-    # ----------------------
-    # ASIGNACION ESPOSA
-    # ----------------------
+    pension_mensual = total / 12
 
-    if esposa:
-        pension_diaria *= 1.15
-
-    pension_mensual = pension_diaria * 30
-
-    # ----------------------
-    # PROYECCION
-    # ----------------------
-
+    # proyección inflación
     años = edad_retiro - edad_actual
 
     pension_futura = pension_mensual * ((1 + inflacion) ** años)
