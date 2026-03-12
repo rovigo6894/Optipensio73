@@ -2,8 +2,7 @@ import streamlit as st
 import pandas as pd
 
 from Core.pension_imss import (
-    calcular_pension_ley73,
-    proyectar_pension_anual
+    calcular_pension_ley73
 )
 
 st.set_page_config(page_title="OptiPensión 73", page_icon="💰")
