@@ -10,7 +10,6 @@ FACTOR_FOX = 1.11
 def buscar_tabla(veces_uma):
 
     for li, ls, cuantia, incremento in TABLA_LEY73:
-
         if li <= veces_uma <= ls:
             return cuantia, incremento
 
@@ -18,7 +17,7 @@ def buscar_tabla(veces_uma):
 
 
 def calcular_pension_ley73(
-        salario_promedio,
+        salario_diario,
         semanas,
         edad_actual,
         edad_retiro,
@@ -29,33 +28,58 @@ def calcular_pension_ley73(
 
     UMA = obtener_uma(anio_actual)
 
-    veces_uma = salario_promedio / UMA
+    veces_uma = salario_diario / UMA
 
     cuantia_pct, incremento_pct = buscar_tabla(veces_uma)
 
-    cuantia_basica = salario_promedio * (cuantia_pct / 100)
+    # -------------------------
+    # CUANTIA BASICA
+    # -------------------------
+
+    cuantia_basica = salario_diario * (cuantia_pct / 100)
+
+    # -------------------------
+    # INCREMENTOS POR SEMANAS
+    # -------------------------
 
     semanas_excedentes = max(semanas - 500, 0)
 
     incrementos = math.floor(semanas_excedentes / 52)
 
-    aumento = salario_promedio * (incremento_pct / 100) * incrementos
+    incremento_total = cuantia_basica * (incremento_pct / 100) * incrementos
 
-    pension_diaria = cuantia_basica + aumento
+    pension_diaria = cuantia_basica + incremento_total
 
-    # Factor Fox
+    # -------------------------
+    # FACTOR FOX
+    # -------------------------
+
     pension_diaria *= FACTOR_FOX
 
-    # Factor edad
+    # -------------------------
+    # FACTOR EDAD
+    # -------------------------
+
     factor = FACTORES_EDAD.get(edad_retiro, 1)
 
     pension_diaria *= factor
 
-    # Asignación esposa
+    # -------------------------
+    # ASIGNACION ESPOSA
+    # -------------------------
+
     if esposa:
         pension_diaria *= 1.15
 
+    # -------------------------
+    # MENSUAL
+    # -------------------------
+
     pension_mensual = pension_diaria * 30
+
+    # -------------------------
+    # PROYECCION
+    # -------------------------
 
     años = edad_retiro - edad_actual
 
