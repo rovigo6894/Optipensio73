@@ -1,4 +1,4 @@
-from config.parametros import *
+from Config.parametros import *
 
 def calcular_pension_base(
     salario_promedio,
