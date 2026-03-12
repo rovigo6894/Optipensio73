@@ -1,5 +1,5 @@
 import streamlit as st
-from core.calculadora_pension import calcular_pension
+from core.calculadora_pension import calcular_pension_ley73
 
 st.title("Simulador de Pensión IMSS Ley 73")
 
