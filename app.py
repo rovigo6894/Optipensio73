@@ -1,5 +1,5 @@
 import streamlit as st
-from Core.pension_imss import calcular_pension_base
+from core.pension_imss import calcular_pension_base
 
 st.set_page_config(page_title="OptiPensión 73", layout="centered")
 
