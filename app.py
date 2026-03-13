@@ -218,8 +218,9 @@ with col_title:
 # --- PESTAÑAS ---
 tab1, tab2, tab3 = st.tabs(["📊 Escenario Actual", "🚀 Estrategia Mod 40", "📈 ROI & Comparativa"])
 
+
 # ============================================
-# PESTAÑA 1: ESCENARIO ACTUAL
+# PESTAÑA 1: ESCENARIO ACTUAL (CORREGIDA)
 # ============================================
 with tab1:
     st.markdown("### 📊 Escenario Actual")
@@ -238,18 +239,25 @@ with tab1:
     factor_edad = FACTORES_EDAD.get(edad_retiro, 0.75)
     st.caption(f"Factor por edad aplicado: {factor_edad*100:.0f}%")
     
-    # Calcular pensión base
-    p_60, _ = calcular_pension_ley73(sal_val, sem_val, edad_val, 60, inf_val, esp_val)
-    p_100 = p_60 / 0.75
+    # Calcular pensión base (con inflación 0 para obtener valor actual)
+    p_base, _ = calcular_pension_ley73(sal_val, sem_val, edad_val, 60, 0, esp_val)
+    st.session_state.pension_base = p_base
     
-    # Generar tabla
+    # Generar tabla desde edad actual hasta edad de retiro
     datos = []
     for i in range((edad_retiro - edad_val) + 1):
         ed_i = edad_val + i
         años_desde_hoy = i
         factor_ed = FACTORES_EDAD.get(ed_i, 1.0)
         f_inf = (1 + (inf_val/100)) ** años_desde_hoy
-        p_i = (p_100 * factor_ed) * f_inf
+        
+        # Para la edad actual, usar el valor base exacto
+        if ed_i == edad_val:
+            p_i = p_base
+        else:
+            # Para edades futuras, proyectar con inflación y factor por edad
+            p_i = p_base * f_inf * (factor_ed / 0.75)
+        
         datos.append({
             "Año": 2026 + años_desde_hoy,
             "Edad": ed_i,
