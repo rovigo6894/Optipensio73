@@ -18,8 +18,9 @@ st.set_page_config(
     page_icon="💰"
 )
 
-# --- FUNCIÓN PARA GENERAR EL PDF (VERSIÓN ROBUSTA) ---
+# --- FUNCIÓN PARA GENERAR EL PDF (VERSIÓN DEFINITIVA CORREGIDA) ---
 def generar_pdf(df, p_ahora, p_meta, edad_actual, edad_obj, salario, semanas):
+    # Usamos helvetica para evitar errores de fuentes faltantes en el servidor
     pdf = FPDF()
     pdf.add_page()
     
@@ -67,8 +68,8 @@ def generar_pdf(df, p_ahora, p_meta, edad_actual, edad_obj, salario, semanas):
     pdf.set_font("helvetica", "I", 9)
     pdf.cell(0, 5, "Director General de Optipension 73", ln=True, align="R")
     
-    # Retornar como bytes de forma segura para Streamlit
-    return pdf.output()
+    # CONVERSIÓN CRÍTICA: Convertir bytearray a bytes para Streamlit
+    return bytes(pdf.output())
 
 # ---------------------------------------------------
 # INTERFAZ DE USUARIO (APP)
@@ -86,62 +87,61 @@ st.subheader("Datos del trabajador")
 c1, c2 = st.columns(2)
 
 with c1:
-    edad_actual_val = st.number_input("Edad actual", min_value=50, max_value=65, value=57)
-    semanas_val = st.number_input("Semanas cotizadas", min_value=500, max_value=3000, value=1315)
+    edad_in = st.number_input("Edad actual", min_value=50, max_value=65, value=57)
+    semanas_in = st.number_input("Semanas cotizadas", min_value=500, max_value=3000, value=1315)
 
 with c2:
-    salario_val = st.number_input("Salario diario (SDI)", min_value=100.0, value=960.0)
-    edad_retiro_obj_val = st.selectbox("Edad de retiro objetivo", [60,61,62,63,64,65], index=0)
+    salario_in = st.number_input("Salario diario (SDI)", min_value=100.0, value=960.0)
+    edad_obj_in = st.selectbox("Edad de retiro objetivo", [60,61,62,63,64,65], index=0)
 
-inflacion_val = st.number_input("Inflación anual estimada (%)", value=4.5)
-esposa_val = st.checkbox("Asignación por esposa (15%)", value=True)
+inflacion_in = st.number_input("Inflación anual estimada (%)", value=4.5)
+esposa_in = st.checkbox("Asignación por esposa (15%)", value=True)
 
 if st.button("Recalcular simulación"):
-    # Lógica de proyección dinámica
-    p_60_hoy, _ = calcular_pension_ley73(salario_val, semanas_val, edad_actual_val, 60, inflacion_val, esposa_val)
-    p_base_100 = p_60_hoy / 0.75 
+    # Ejecución del motor de cálculo
+    p_60, _ = calcular_pension_ley73(salario_in, semanas_in, edad_in, 60, inflacion_in, esposa_in)
+    p_base = p_60 / 0.75 
     
-    datos = []
-    ano_inicio = datetime.now().year
+    res_list = []
+    anio_base = datetime.now().year
 
-    for i in range((65 - edad_actual_val) + 1):
-        edad_i = edad_actual_val + i
-        f_inflacion = (1 + (inflacion_val/100)) ** i
-        f_edad = 0.75 if edad_i < 60 else FACTORES_EDAD.get(edad_i, 1.0)
-        pension_i = (p_base_100 * f_edad) * f_inflacion
+    for i in range((65 - edad_in) + 1):
+        e_i = edad_in + i
+        f_inf = (1 + (inflacion_in/100)) ** i
+        f_ed = 0.75 if e_i < 60 else FACTORES_EDAD.get(e_i, 1.0)
+        pens_i = (p_base * f_ed) * f_inf
         
-        datos.append({
-            "Año": ano_inicio + i,
-            "Edad": edad_i,
-            "Pensión mensual": round(pension_i, 2)
+        res_list.append({
+            "Año": anio_base + i,
+            "Edad": e_i,
+            "Pensión mensual": round(pens_i, 2)
         })
 
-    df_result = pd.DataFrame(datos)
-    p_ahora_val = df_result[df_result['Edad'] == edad_actual_val]['Pensión mensual'].values[0]
-    p_meta_val = df_result[df_result['Edad'] == edad_retiro_obj_val]['Pensión mensual'].values[0]
+    df_final = pd.DataFrame(res_list)
+    p_hoy = df_final[df_final['Edad'] == edad_in]['Pensión mensual'].values[0]
+    p_meta = df_final[df_final['Edad'] == edad_obj_in]['Pensión mensual'].values[0]
 
-    # Resultados visuales
-    st.success(f"### 💰 Pensión estimada actual (a los {edad_actual_val} años): ${p_ahora_val:,.2f} MXN")
-    st.info(f"### 📈 Pensión proyectada al retiro ({edad_retiro_obj_val} años): ${p_meta_val:,.2f} MXN")
+    # Visualización de resultados
+    st.success(f"### 💰 Pensión estimada hoy ({edad_in} años): ${p_hoy:,.2f} MXN")
+    st.info(f"### 📈 Pensión proyectada al retiro ({edad_obj_in} años): ${p_meta:,.2f} MXN")
 
-    fig = px.bar(df_result, x="Edad", y="Pensión mensual", template="plotly_dark", text_auto=".0f")
+    fig = px.bar(df_final, x="Edad", y="Pensión mensual", template="plotly_dark", text_auto=".0f")
     st.plotly_chart(fig, use_container_width=True)
 
     st.subheader("📋 Tabla de proyección anual")
-    st.dataframe(df_result.style.format({"Pensión mensual": "${:,.2f}"}), use_container_width=True)
+    st.dataframe(df_final.style.format({"Pensión mensual": "${:,.2f}"}), use_container_width=True)
 
-    # PREPARAR PDF PARA DESCARGA
+    # Bloque de descarga de PDF
     try:
-        pdf_bytes = generar_pdf(df_result, p_ahora_val, p_meta_val, edad_actual_val, edad_retiro_obj_val, salario_val, semanas_val)
+        archivo_pdf = generar_pdf(df_final, p_hoy, p_meta, edad_in, edad_obj_in, salario_in, semanas_in)
         st.download_button(
             label="📥 Descargar Reporte PDF con Firma",
-            data=pdf_bytes,
-            file_name=f"Reporte_Optipension_{edad_actual_val}anos.pdf",
+            data=archivo_pdf,
+            file_name=f"Reporte_Optipension_{edad_in}anos.pdf",
             mime="application/pdf"
         )
-    except Exception as e:
-        st.error(f"Error al generar el PDF: {e}")
-
+    except Exception as error:
+        st.error(f"Error técnico al generar el PDF: {error}")
 
 
 # ---------------------------------------------------
