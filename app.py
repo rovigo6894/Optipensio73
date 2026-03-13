@@ -9,6 +9,17 @@ import io
 from core.calculadora_pension import calcular_pension_ley73
 from config.parametros import FACTORES_EDAD
 
+# --- OCULTAR OPCIONES DE STREAMLIT ---
+st.markdown("""
+    <style>
+    #MainMenu {visibility: hidden;}
+    footer {visibility: hidden;}
+    header {visibility: hidden;}
+    .stAppDeployButton {display:none;}
+    [data-testid="stToolbar"] {visibility: hidden !important;}
+    </style>
+    """, unsafe_allow_html=True)
+
 # ---------------------------------------------------
 # CONFIGURACION DE PÁGINA
 # ---------------------------------------------------
@@ -19,7 +30,7 @@ st.set_page_config(
 )
 
 # --- FUNCIÓN PARA GENERAR EL PDF (DISEÑO MEJORADO) ---
-def generar_pdf(df, p_ahora, p_meta, edad_actual, edad_obj, salario, semanas):
+def generar_pdf(df, p_hoy, p_meta, edad_act, edad_obj, sal, sem):
     pdf = FPDF()
     pdf.add_page()
     
@@ -38,44 +49,39 @@ def generar_pdf(df, p_ahora, p_meta, edad_actual, edad_obj, salario, semanas):
     pdf.set_font("helvetica", "I", 9)
     pdf.cell(0, 10, f"Fecha de emision: {datetime.now().strftime('%d/%m/%Y')}", ln=True, align="C")
     
-    pdf.ln(20) # Espacio generoso para que respire
+    pdf.ln(20)
 
-    # 3. DATOS TÉCNICOS (Distribuidos)
+    # 3. DATOS TÉCNICOS
     pdf.set_fill_color(245, 245, 245)
     pdf.set_font("helvetica", "B", 12)
     pdf.cell(0, 10, "  Resumen del Perfil:", ln=True, fill=True)
     pdf.ln(5)
     pdf.set_font("helvetica", "", 11)
-    pdf.cell(0, 8, f"  * Edad al momento del calculo: {edad_actual} anos", ln=True)
-    pdf.cell(0, 8, f"  * Semanas cotizadas reconocidas: {semanas}", ln=True)
-    pdf.cell(0, 8, f"  * Salario Diario Integrado (SDI): ${salario:,.2f} MXN", ln=True)
+    pdf.cell(0, 8, f"  * Edad al momento del calculo: {edad_act} anos", ln=True)
+    pdf.cell(0, 8, f"  * Semanas cotizadas reconocidas: {sem}", ln=True)
+    pdf.cell(0, 8, f"  * Salario Diario Integrado (SDI): ${sal:,.2f} MXN", ln=True)
     
-    pdf.ln(15) # Más espacio entre secciones
+    pdf.ln(15)
 
     # 4. RESULTADOS PROYECTADOS
     pdf.set_font("helvetica", "B", 12)
     pdf.cell(0, 10, "  Resultados de la Proyeccion:", ln=True, fill=True)
     pdf.ln(5)
     pdf.set_font("helvetica", "", 11)
-    pdf.cell(0, 10, f"  Pension estimada a la edad actual: ${p_ahora:,.2f} MXN", ln=True)
+    pdf.cell(0, 10, f"  Pension estimada a la edad actual: ${p_hoy:,.2f} MXN", ln=True)
     pdf.set_font("helvetica", "B", 12)
-    pdf.set_text_color(0, 51, 102) # Azul oscuro profesional
+    pdf.set_text_color(0, 51, 102)
     pdf.cell(0, 10, f"  PENSION PROYECTADA AL RETIRO ({edad_obj} ANOS): ${p_meta:,.2f} MXN", ln=True)
     pdf.set_text_color(0, 0, 0)
     
-    pdf.ln(30) # Espacio amplio para cubrir la hoja
+    pdf.ln(30)
 
-    # 5. BLOQUE DE FIRMA (Natural)
-    # Movemos la firma hacia abajo para que ocupe el final de la hoja
+    # 5. BLOQUE DE FIRMA
     y_firma = pdf.get_y()
-    
-    # Línea de firma
     pdf.line(120, y_firma + 20, 190, y_firma + 20)
-    
-    # Imagen de firma (Sin fondo)
     try:
-        # Ajustamos la posición para que "pise" la línea
-        pdf.image("assets/firma.png", 135, y_actual_pos := y_firma - 5, 45) 
+        # Asegúrate de que firma.png tenga fondo transparente
+        pdf.image("assets/firma.png", 135, y_firma - 5, 45) 
     except:
         pass
     
@@ -103,47 +109,44 @@ st.subheader("Configuración de la simulación")
 c1, c2 = st.columns(2)
 
 with c1:
-    edad_user = st.number_input("Edad actual", min_value=50, max_value=65, value=57)
-    semanas_user = st.number_input("Semanas cotizadas", min_value=500, max_value=3000, value=1315)
+    ed_a = st.number_input("Edad actual", min_value=50, max_value=65, value=57)
+    se_a = st.number_input("Semanas cotizadas", min_value=500, max_value=3000, value=1315)
 
 with c2:
-    salario_user = st.number_input("Salario diario (SDI)", min_value=100.0, value=960.0)
-    edad_meta_user = st.selectbox("Edad de retiro objetivo", [60,61,62,63,64,65], index=0)
+    sa_a = st.number_input("Salario diario (SDI)", min_value=100.0, value=960.0)
+    ed_o = st.selectbox("Edad de retiro objetivo", [60,61,62,63,64,65], index=0)
 
-inflacion_user = st.number_input("Inflación anual estimada (%)", value=4.5)
-esposa_user = st.checkbox("Asignación por esposa (15%)", value=True)
+inf_a = st.number_input("Inflación anual estimada (%)", value=4.5)
+esp_a = st.checkbox("Asignación por esposa (15%)", value=True)
 
 if st.button("Generar Proyección Profesional"):
-    # Cálculos
-    p_60, _ = calcular_pension_ley73(salario_user, semanas_user, edad_user, 60, inflacion_user, esposa_user)
+    p_60, _ = calcular_pension_ley73(sa_a, se_a, ed_a, 60, inf_a, esp_a)
     p_100 = p_60 / 0.75 
     
-    datos_grafica = []
-    for i in range((65 - edad_user) + 1):
-        ed_i = edad_user + i
-        f_inf = (1 + (inflacion_user/100)) ** i
-        f_ed = 0.75 if ed_i < 60 else FACTORES_EDAD.get(ed_i, 1.0)
-        p_i = (p_100 * f_ed) * f_inf
-        datos_grafica.append({"Año": 2026 + i, "Edad": ed_i, "Pensión": round(p_i, 2)})
+    datos_g = []
+    for i in range((65 - ed_a) + 1):
+        e_i = ed_a + i
+        f_i = (1 + (inf_a/100)) ** i
+        f_e = 0.75 if e_i < 60 else FACTORES_EDAD.get(e_i, 1.0)
+        p_i = (p_100 * f_e) * f_i
+        datos_g.append({"Año": datetime.now().year + i, "Edad": e_i, "Pensión": round(p_i, 2)})
 
-    df_res = pd.DataFrame(datos_grafica)
-    p_hoy_val = df_res[df_res['Edad'] == edad_user]['Pensión'].values[0]
-    p_meta_val = df_res[df_res['Edad'] == edad_meta_user]['Pensión'].values[0]
+    df_res = pd.DataFrame(datos_g)
+    val_hoy = df_res[df_res['Edad'] == ed_a]['Pensión'].values[0]
+    val_meta = df_res[df_res['Edad'] == ed_o]['Pensión'].values[0]
 
-    # Pantalla
-    st.success(f"### 💰 Estimación a edad actual: ${p_hoy_val:,.2f} MXN")
-    st.info(f"### 📈 Proyección al retiro ({edad_meta_user} años): ${p_meta_val:,.2f} MXN")
+    st.success(f"### 💰 Estimación a edad actual: ${val_hoy:,.2f} MXN")
+    st.info(f"### 📈 Proyección al retiro ({ed_o} años): ${val_meta:,.2f} MXN")
 
     fig = px.bar(df_res, x="Edad", y="Pensión", template="plotly_dark", text_auto=".0f")
     st.plotly_chart(fig, use_container_width=True)
 
-    # Descarga PDF
     try:
-        pdf_final = generar_pdf(df_res, p_hoy_val, p_meta_val, edad_user, edad_meta_user, salario_user, semanas_user)
+        pdf_f = generar_pdf(df_res, val_hoy, val_meta, ed_a, ed_o, sa_a, se_a)
         st.download_button(
             label="📥 Descargar Reporte PDF para el Cliente",
-            data=pdf_final,
-            file_name=f"Reporte_Optipension_{edad_user}anos.pdf",
+            data=pdf_f,
+            file_name=f"Reporte_Optipension_{ed_a}anos.pdf",
             mime="application/pdf"
         )
     except Exception as e:
