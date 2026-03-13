@@ -64,34 +64,35 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- FUNCIÓN PDF CORREGIDA (SOLO ESTA SECCIÓN SE MEJORÓ) ---
+# --- FUNCIÓN PDF CORREGIDA (LOGO CHICO, TABLA COMPACTA Y FIRMA) ---
 def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
+    pdf.set_margins(10, 10, 10)
     pdf.add_page()
     
-    # 1. ENCABEZADO
+    # 1. ENCABEZADO: Logo (22mm) y Título
     try: 
-        pdf.image("assets/image.jpg", 10, 10, 32) 
+        pdf.image("assets/image.jpg", 10, 10, 22) 
     except: 
         pass
     
-    pdf.set_font("helvetica", "B", 17)
-    pdf.set_xy(45, 15)
+    pdf.set_font("helvetica", "B", 16)
+    pdf.set_xy(40, 15)
     pdf.cell(0, 10, "ESTRATEGIA DE RETIRO PROFESIONAL", ln=True, align="R")
-    pdf.set_font("helvetica", "I", 10)
-    pdf.cell(0, 5, f"Generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True, align="R")
-    pdf.line(10, 42, 200, 42)
+    pdf.set_font("helvetica", "I", 9)
+    pdf.cell(0, 5, f"Consultoría: Ing. Roberto Villarreal | {datetime.now().strftime('%d/%m/%Y')}", ln=True, align="R")
+    pdf.line(10, 35, 200, 35)
 
     # 2. DIAGNÓSTICO
-    pdf.set_y(48)
+    pdf.set_y(40)
     pdf.set_fill_color(240, 240, 240)
-    pdf.set_font("helvetica", "B", 12)
+    pdf.set_font("helvetica", "B", 11)
     pdf.cell(0, 8, " 1. Diagnóstico de Situación Actual", ln=True, fill=True)
     pdf.set_font("helvetica", "", 10)
     pdf.ln(2)
-    pdf.cell(0, 6, f"      - Edad actual: {edad_act} años  |  Semanas: {sem}  |  SBC: ${sal:,.2f} MXN", ln=True)
+    pdf.cell(0, 6, f"   Edad actual: {edad_act} años  |  Semanas: {sem}  |  SBC: ${sal:,.2f} MXN", ln=True)
 
-    # 3. RESULTADOS DESTACADOS (Recuadros)
+    # 3. RESULTADOS (Cuadros de color)
     pdf.ln(5)
     pdf.set_font("helvetica", "B", 10)
     pdf.set_fill_color(30, 41, 59) 
@@ -107,7 +108,7 @@ def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
     pdf.cell(6, 12, "", 0, 0)
     pdf.cell(92, 12, f"  ${p_proyectada:,.2f} MXN", 1, 1, "C")
 
-    # 4. TABLA DE PROYECCIÓN
+    # 4. TABLA DE PROYECCIÓN (Celdas de 6mm para ahorrar espacio)
     pdf.ln(8)
     pdf.set_font("helvetica", "B", 11)
     pdf.set_fill_color(240, 240, 240)
@@ -121,18 +122,23 @@ def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
     
     pdf.set_font("helvetica", "", 9)
     for i, row in df.iterrows():
-        if i < 12: 
+        if i < 11: 
             pdf.cell(45, 6, str(int(row['Año'])), 1, 0, "C")
             pdf.cell(45, 6, str(int(row['Edad'])), 1, 0, "C")
             pdf.cell(100, 6, f"${row['Pensión']:,.2f} MXN", 1, 1, "R")
 
-    # 5. FIRMA FIJA AL FINAL
+    # 5. FIRMA Y PIE (Posición fija 255mm)
     pdf.set_y(255)
     pdf.set_font("helvetica", "I", 7)
     pdf.multi_cell(0, 4, "Este reporte es una proyección informativa basada en la Ley 73 del IMSS. El monto real será determinado únicamente por la institución al momento del trámite oficial.", align="C")
+    
     pdf.ln(2)
+    try:
+        pdf.image("assets/firma.png", 145, 248, 40) # Firma PNG centrada a la derecha
+    except:
+        pass
+
     pdf.set_font("helvetica", "B", 10)
-    pdf.cell(0, 5, "____________________________________", ln=True, align="R")
     pdf.cell(0, 5, "Ing. Roberto Villarreal Glz", ln=True, align="R")
     pdf.set_font("helvetica", "", 9)
     pdf.cell(0, 4, "Especialista en Pensiones Ley 73", ln=True, align="R")
