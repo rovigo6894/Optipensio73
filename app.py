@@ -1,127 +1,130 @@
 import streamlit as st
 import pandas as pd
-from datetime import datetime
+from fpdf import FPDF
 import plotly.express as px
-from fpdf import FPDF 
-import io
 
-# --- IMPORTACIÓN DE TUS ARCHIVOS (Esto es lo que faltaba) ---
+# Importación de tu lógica de negocio
 from core.calculadora_pension import calcular_pension_ley73
 from config.parametros import FACTORES_EDAD
 
-# --- CONFIGURACIÓN ---
-st.set_page_config(page_title="Optipensión 73 PRO", layout="wide", initial_sidebar_state="expanded")
+st.set_page_config(page_title="Optipensión 73 PRO", layout="wide")
 
-# --- ESTILOS ---
-st.markdown("""
-    <style>
-    [data-testid="stSidebar"] { background-color: #111827; }
-    .metric-container {
-        background-color: #1e293b; padding: 20px; border-radius: 10px;
-        border-left: 5px solid #3b82f6; margin-bottom: 20px;
-    }
-    .metric-container-pro {
-        background-color: #064e3b; padding: 20px; border-radius: 10px;
-        border-left: 5px solid #10b981; margin-bottom: 20px;
-    }
-    .metric-value { font-size: 28px; font-weight: bold; color: white; }
-    </style>
-    """, unsafe_allow_html=True)
-
-# --- PDF PROFESIONAL (Logo pequeño y firma centrada) ---
 def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
-    try: pdf.image("assets/image.jpg", 10, 10, 25) 
+    
+    # 1. LOGO PEQUEÑO (20mm)
+    try: pdf.image("assets/image.jpg", 10, 8, 20) 
     except: pass
-    pdf.set_font("helvetica", "B", 18)
-    pdf.set_xy(50, 15)
-    pdf.cell(0, 10, "ESTRATEGIA DE RETIRO PROFESIONAL", ln=True, align="R")
-    pdf.ln(12)
-    pdf.line(10, 38, 200, 38)
-    pdf.set_y(45)
+    
+    pdf.set_font("helvetica", "B", 16)
+    pdf.set_xy(40, 12)
+    pdf.cell(0, 8, "ESTRATEGIA DE RETIRO: OPTIPENSIÓN 73", ln=True, align="R")
+    pdf.line(10, 30, 200, 30)
+
+    # 2. DIAGNÓSTICO (Más arriba para ganar espacio)
+    pdf.set_y(35)
     pdf.set_font("helvetica", "B", 11)
-    pdf.cell(0, 8, "  1. DIAGNÓSTICO DE SITUACIÓN ACTUAL", ln=True, fill=False)
+    pdf.set_fill_color(240, 240, 240)
+    pdf.cell(0, 8, "  1. DIAGNÓSTICO DE SITUACIÓN ACTUAL", ln=True, fill=True)
     pdf.set_font("helvetica", "", 10)
-    pdf.cell(0, 6, f" Edad Actual: {edad_act} años | Semanas: {sem} | SBC: ${sal:,.2f}", ln=True)
+    pdf.ln(2)
+    pdf.cell(0, 6, f" Edad Actual: {edad_act} años  |  Semanas: {sem}  |  SBC: ${sal:,.2f}", ln=True)
+
+    # 3. CUADROS DE RESULTADOS
+    pdf.ln(5)
+    y_res = pdf.get_y()
+    pdf.set_fill_color(30, 41, 59) # Azul oscuro
+    pdf.rect(10, y_res, 92, 25, 'F')
+    pdf.set_xy(10, y_res + 3)
+    pdf.set_text_color(255, 255, 255)
+    pdf.set_font("helvetica", "B", 9)
+    pdf.cell(92, 6, "PENSIÓN ESTIMADA AL DÍA DE HOY", ln=True, align="C")
+    pdf.set_font("helvetica", "B", 14)
+    pdf.set_x(10)
+    pdf.cell(92, 10, f"${p_hoy:,.2f} MXN", ln=False, align="C")
+
+    pdf.set_fill_color(6, 78, 59) # Verde oscuro
+    pdf.rect(105, y_res, 92, 25, 'F')
+    pdf.set_xy(105, y_res + 3)
+    pdf.set_font("helvetica", "B", 9)
+    pdf.cell(92, 6, f"PENSIÓN PROYECTADA ({edad_obj} AÑOS)", ln=True, align="C")
+    pdf.set_font("helvetica", "B", 14)
+    pdf.set_x(105)
+    pdf.cell(92, 10, f"${p_proyectada:,.2f} MXN", ln=True, align="C")
+
+    # 4. TABLA DE PROYECCIÓN
+    pdf.set_text_color(0, 0, 0)
     pdf.ln(10)
-    # Tabla de resultados
+    pdf.set_font("helvetica", "B", 11)
+    pdf.cell(0, 8, "  2. PROYECCIÓN DE CRECIMIENTO POR EDAD", ln=True)
+    
     pdf.set_font("helvetica", "B", 9)
     pdf.set_fill_color(59, 130, 246)
     pdf.set_text_color(255, 255, 255)
-    pdf.cell(45, 8, "Año", 1, 0, "C", True)
-    pdf.cell(45, 8, "Edad", 1, 0, "C", True)
-    pdf.cell(95, 8, "Pensión Estimada Mensual", 1, 1, "C", True)
+    pdf.cell(45, 8, "Año Calendario", 1, 0, "C", True)
+    pdf.cell(45, 8, "Edad Asegurado", 1, 0, "C", True)
+    pdf.cell(95, 8, "Pensión Mensual Estimada", 1, 1, "C", True)
+    
     pdf.set_font("helvetica", "", 9)
     pdf.set_text_color(0, 0, 0)
-    for i, row in df.iterrows():
+    for _, row in df.iterrows():
         pdf.cell(45, 7, str(int(row['Año'])), 1, 0, "C")
         pdf.cell(45, 7, str(int(row['Edad'])), 1, 0, "C")
         pdf.cell(95, 7, f"${row['Pensión']:,.2f} MXN", 1, 1, "R")
-    # Firma centrada abajo
-    pdf.set_y(250)
-    try: pdf.image("assets/firma.png", 150, 235, 40)
-    except: pdf.line(150, 255, 190, 255)
-    pdf.set_y(260)
+
+    # 5. CONDICIONES LEGALES (Aseguradas)
+    pdf.ln(10)
+    pdf.set_font("helvetica", "B", 8)
+    pdf.cell(0, 5, "TÉRMINOS Y CONDICIONES LEGALES:", ln=True)
+    pdf.set_font("helvetica", "", 7)
+    pdf.multi_cell(0, 4, "Este documento es una proyección informativa basada en la Ley del Seguro Social de 1973. El monto real será determinado únicamente por el IMSS al momento del trámite. Se considera la inflación anual capturada en el simulador.")
+
+    # 6. FIRMA Y CARGO CENTRADOS
+    pdf.set_y(245)
+    try: pdf.image("assets/firma.png", 150, 235, 35)
+    except: pdf.line(145, 255, 195, 255)
+    
+    pdf.set_y(256)
     pdf.set_font("helvetica", "B", 10)
     pdf.set_x(140)
     pdf.cell(60, 5, "Ing. Roberto Villarreal Glz", ln=True, align="C")
+    pdf.set_font("helvetica", "", 9)
+    pdf.set_x(140)
+    pdf.cell(60, 4, "Especialista en Pensiones Ley 73", ln=True, align="C")
+    
     return bytes(pdf.output())
 
-# --- SIDEBAR ---
-with st.sidebar:
-    try: st.image("assets/image.jpg", width=100)
-    except: pass
-    st.markdown("### 📍 Parámetros Base")
-    edad_val = st.number_input("Edad actual", 50, 70, 57)
-    sem_val = st.number_input("Semanas Reconocidas", 500, 3000, 1315)
-    sal_val = st.number_input("Salario Diario (SBC)", 100.0, 3500.0, 959.15)
-    inf_val = st.number_input("Inflación Est. %", 0.0, 10.0, 4.5)
-    esp_val = st.checkbox("Asignación Esposa", value=True)
-
-# --- CUERPO ---
+# --- INTERFAZ STREAMLIT ---
 st.title("OPTIPENSIÓN 73")
-st.markdown("---") # ESTO ES EL REEMPLAZO DEL DIVIDER
+st.markdown("---") 
 
-tab1, tab2, tab3 = st.tabs(["📊 Escenario Actual", "🚀 Estrategia Mod 40", "📝 Términos"])
+with st.sidebar:
+    st.header("Configuración")
+    edad = st.number_input("Edad actual", 50, 65, 57)
+    semanas = st.number_input("Semanas", 500, 2500, 1315)
+    salario = st.number_input("SBC", 100.0, 3500.0, 959.15)
+    inflacion = st.number_input("Inflación %", 0.0, 10.0, 4.5)
+    esposa = st.checkbox("Asignación Esposa", value=True)
 
-with tab1:
-    # AQUÍ USAMOS TU LÓGICA DE CALCULO REAL
-    p_60, _ = calcular_pension_ley73(sal_val, sem_val, edad_val, 60, inf_val, esp_val)
-    p_100 = p_60 / 0.75
-    
-    datos = []
-    for i in range((65 - edad_val) + 1):
-        ed_i = edad_val + i
-        f_i = (1 + (inf_val/100)) ** i
-        f_ed = 0.75 if ed_i < 60 else FACTORES_EDAD.get(ed_i, 1.0)
-        p_i = (p_100 * f_ed) * f_i
-        datos.append({"Año": 2026 + i, "Edad": ed_i, "Pensión": round(p_i, 2)})
-    df_actual = pd.DataFrame(datos)
-    
-    edad_obj = st.select_slider("¿A qué edad planea retirarse?", options=list(range(60, 66)), value=60)
-    p_hoy = df_actual[df_actual['Edad'] == edad_val]['Pensión'].values[0]
-    p_proyectada = df_actual[df_actual['Edad'] == edad_obj]['Pensión'].values[0]
-    
-    col1, col2 = st.columns([1, 2])
-    with col1:
-        st.markdown(f'<div class="metric-container"><div style="color:#94a3b8">Pensión Hoy</div><div class="metric-value">${p_hoy:,.2f}</div></div>', unsafe_allow_html=True)
-        st.markdown(f'<div class="metric-container-pro"><div style="color:#a7f3d0">A los {edad_obj} años</div><div class="metric-value">${p_proyectada:,.2f}</div></div>', unsafe_allow_html=True)
-        
-        pdf_bytes = generar_pdf_pro(df_actual, p_hoy, p_proyectada, edad_val, edad_obj, sal_val, sem_val)
-        st.download_button("📥 Descargar Reporte PDF", pdf_bytes, f"Reporte_{edad_obj}.pdf")
+# Lógica de cálculo
+p_60, _ = calcular_pension_ley73(salario, semanas, edad, 60, inflacion, esposa)
+p_base = p_60 / 0.75
+datos = []
+for i in range((65 - edad) + 1):
+    ed_i = edad + i
+    p_i = (p_base * FACTORES_EDAD.get(ed_i, 1.0)) * ((1 + inflacion/100)**i)
+    datos.append({"Año": 2026+i, "Edad": ed_i, "Pensión": round(p_i, 2)})
+df_res = pd.DataFrame(datos)
 
-    with col2:
-        st.plotly_chart(px.bar(df_actual, x="Edad", y="Pensión", color="Pensión", color_continuous_scale="Blues"), use_container_width=True)
+col1, col2 = st.columns([1, 2])
+with col1:
+    st.metric("Pensión Hoy", f"${datos[0]['Pensión']:,.2f}")
+    pdf_bytes = generar_pdf_pro(df_res, datos[0]['Pensión'], datos[3]['Pensión'], edad, 60, salario, semanas)
+    st.download_button("📥 Descargar Reporte PDF", pdf_bytes, "Reporte_Retiro.pdf")
 
-with tab2:
-    st.info("Módulo de Modalidad 40 en desarrollo.")
-
-with tab3:
-    st.markdown("### Términos y Condiciones")
-    st.write("Este simulador es una herramienta informativa basada en la Ley 73 del IMSS.")
-
-st.caption("Ing. Roberto Villarreal Glz. | 2026")
+with col2:
+    st.plotly_chart(px.bar(df_res, x="Edad", y="Pensión"))
 
 
 # ---------------------------------------------------
