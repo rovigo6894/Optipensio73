@@ -67,7 +67,7 @@ edad_retiro = st.selectbox(
 )
 
 inflacion = st.number_input(
-    "Inflación anual estimada (%)",
+    "Inflación anual (%)",
     min_value=0.0,
     max_value=15.0,
     value=4.5
@@ -79,7 +79,7 @@ esposa = st.checkbox("Asignación por esposa (15%)")
 # TABLA PORCENTAJES LEY 73
 # ---------------------------------------------------
 
-tabla_porcentaje = {
+porcentaje_edad = {
     60: 0.75,
     61: 0.80,
     62: 0.85,
@@ -104,7 +104,6 @@ if st.button("Recalcular simulación"):
     )
 
     st.success(f"### 💰 Pensión estimada actual: ${pension_hoy:,.0f} MXN")
-
     st.info(f"### 📈 Pensión proyectada al retiro: ${pension_futura:,.0f} MXN")
 
     # ---------------------------------------------------
@@ -112,25 +111,26 @@ if st.button("Recalcular simulación"):
     # ---------------------------------------------------
 
     inflacion_decimal = inflacion / 100
-    anos = edad_retiro - edad_actual
     ano_actual = datetime.now().year
 
     datos = []
 
-    # calcular cuantia base
-    porcentaje_actual = tabla_porcentaje.get(edad_retiro, 0.75)
-    cuantia_base = pension_futura / porcentaje_actual
+    pension_base = pension_hoy
 
-    for i in range(anos + 1):
+    for i in range((edad_retiro - edad_actual) + 1):
 
         edad = edad_actual + i
         anio = ano_actual + i
 
-        porcentaje = tabla_porcentaje.get(edad, porcentaje_actual)
+        pension = pension_base * ((1 + inflacion_decimal) ** i)
 
-        pension = cuantia_base * porcentaje
+        # aplicar incremento de porcentaje solo desde los 60
+        if edad >= 60:
+            porcentaje = porcentaje_edad.get(edad, 1.0)
+        else:
+            porcentaje = 1.0
 
-        pension = pension * ((1 + inflacion_decimal) ** i)
+        pension = pension * porcentaje
 
         datos.append({
             "Edad": edad,
@@ -170,11 +170,7 @@ if st.button("Recalcular simulación"):
 
     df["Pensión mensual"] = df["Pensión mensual"].map(lambda x: f"${x:,.2f}")
 
-    st.dataframe(
-        df,
-        use_container_width=True
-    )
-
+    st.dataframe(df, use_container_width=True)
 
 # ---------------------------------------------------
 # FOOTER
@@ -196,7 +192,7 @@ Los resultados son aproximados y no constituyen un dictamen oficial.
 ### 🔒 AVISO DE PRIVACIDAD
 
 Esta aplicación DEMO no almacena datos personales ingresados por el usuario.  
-Todos los cálculos se realizan en tiempo real.
+Los cálculos se realizan en tiempo real.
 
 ---
 
