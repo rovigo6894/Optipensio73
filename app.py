@@ -16,22 +16,27 @@ st.set_page_config(
     initial_sidebar_state="expanded" 
 )
 
-# --- ESTILOS CSS: REDUCCIÓN DE SIDEBAR Y LOGO ---
+# --- ESTILOS CSS: SIDEBAR, LOGO Y AJUSTES DE PESTAÑAS ---
 st.markdown("""
     <style>
-    /* Sidebar más angosto */
+    /* Sidebar angosto de 260px */
     [data-testid="stSidebar"] { 
         background-color: #111827; 
         min-width: 260px !important;
         max-width: 260px !important;
     }
-    /* Logo pequeño y centrado en el sidebar */
+    /* Logo pequeño en sidebar */
     [data-testid="stSidebar"] [data-testid="stImage"] img {
         width: 120px !important;
         height: auto;
         display: block;
         margin-left: auto;
         margin-right: auto;
+    }
+    /* Logo pequeño en la página principal */
+    .main-logo img {
+        width: 100px !important;
+        margin-bottom: 10px;
     }
     /* Ajuste de Tabs */
     .stTabs [data-baseweb="tab-list"] { gap: 15px; }
@@ -44,8 +49,8 @@ def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
     
-    # Encabezado
-    try: pdf.image("assets/image.jpg", 10, 10, 30) # Logo más pequeño en PDF también
+    # Encabezado con Logo
+    try: pdf.image("assets/image.jpg", 10, 10, 30)
     except: pass
     
     pdf.set_font("helvetica", "B", 16)
@@ -112,9 +117,14 @@ with st.sidebar:
     inf_val = st.number_input("Inflación Est. %", value=4.5)
     esp_val = st.checkbox("Asignación Esposa", value=True)
 
-# --- CABECERA ---
-st.title("OPTIPENSIÓN 73")
-st.subheader("Consultoría Especializada en Retiro")
+# --- CABECERA PRINCIPAL CON LOGO ---
+col_logo, col_title = st.columns([1, 5])
+with col_logo:
+    try: st.image("assets/image.jpg", width=100)
+    except: pass
+with col_title:
+    st.title("OPTIPENSIÓN 73")
+    st.subheader("Consultoría Especializada en Retiro")
 
 tab1, tab2, tab3 = st.tabs(["📊 Escenario Actual", "🚀 Estrategia Mod 40", "📈 ROI & Comparativa"])
 
@@ -152,7 +162,7 @@ with tab1:
         fig = px.bar(df_actual, x="Edad", y="Pensión", color="Pensión", color_continuous_scale="Blues")
         st.plotly_chart(fig, use_container_width=True)
 
-# PESTAÑAS VACÍAS PARA LLENAR DESPUÉS
+# PESTAÑAS VACÍAS
 with tab2:
     st.info("Pestaña de Modalidad 40 en preparación.")
 
