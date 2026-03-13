@@ -1,34 +1,38 @@
+import streamlit as st
+import pandas as pd
+from fpdf import FPDF
+import plotly.express as px
+
+# Configuración inicial
+st.set_page_config(page_title="Optipensión 73 PRO", layout="wide")
+
+# PDF con logo pequeño y firma centrada
 def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
     
-    # 1. ENCABEZADO (Logo más pequeño: de 35mm a 25mm)
+    # Logo (25mm)
     try: pdf.image("assets/image.jpg", 10, 10, 25) 
     except: pass
     
     pdf.set_font("helvetica", "B", 18)
     pdf.set_xy(50, 15)
     pdf.cell(0, 10, "ESTRATEGIA DE RETIRO PROFESIONAL", ln=True, align="R")
-    pdf.set_font("helvetica", "B", 12)
-    pdf.cell(0, 7, "OPTIPENSIÓN 73", ln=True, align="R")
-    
-    pdf.ln(10)
+    pdf.ln(12)
     pdf.line(10, 38, 200, 38)
 
-    # 2. DIAGNÓSTICO
-    pdf.set_y(45)
+    # Diagnóstico
+    pdf.set_y(48)
     pdf.set_fill_color(243, 244, 246)
     pdf.set_font("helvetica", "B", 11)
     pdf.cell(0, 8, "  1. DIAGNÓSTICO DE SITUACIÓN ACTUAL", ln=True, fill=True)
     pdf.set_font("helvetica", "", 10)
     pdf.ln(2)
-    pdf.cell(0, 6, f" Edad Actual: {edad_act} años  |  Semanas: {sem}  |  Salario Diario: ${sal:,.2f}", ln=True)
+    pdf.cell(0, 6, f" Edad Actual: {edad_act} años | Semanas: {sem} | SBC: ${sal:,.2f}", ln=True)
 
-    # 3. CUADROS DE RESULTADOS
-    pdf.ln(8)
+    # Cuadros de Resultados
+    pdf.ln(10)
     y_pos = pdf.get_y()
-    
-    # Izquierdo
     pdf.set_fill_color(30, 41, 59)
     pdf.rect(10, y_pos, 92, 28, 'F')
     pdf.set_xy(10, y_pos + 4)
@@ -37,64 +41,53 @@ def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
     pdf.cell(92, 6, "PENSIÓN ESTIMADA HOY", ln=True, align="C")
     pdf.set_font("helvetica", "B", 16)
     pdf.set_x(10)
-    pdf.cell(92, 12, f"${p_hoy:,.2f} MXN", ln=False, align="C")
+    pdf.cell(92, 10, f"${p_hoy:,.2f} MXN", ln=False, align="C")
 
-    # Derecho
     pdf.set_fill_color(6, 78, 59)
     pdf.rect(105, y_pos, 92, 28, 'F')
     pdf.set_xy(105, y_pos + 4)
-    pdf.set_font("helvetica", "B", 9)
     pdf.cell(92, 6, f"PENSIÓN A LOS {edad_obj} AÑOS", ln=True, align="C")
     pdf.set_font("helvetica", "B", 16)
     pdf.set_x(105)
-    pdf.cell(92, 12, f"${p_proyectada:,.2f} MXN", ln=True, align="C")
+    pdf.cell(92, 10, f"${p_proyectada:,.2f} MXN", ln=True, align="C")
     
-    # 4. TABLA DE PROYECCIÓN
+    # Tabla
     pdf.set_text_color(0, 0, 0)
-    pdf.ln(12) 
+    pdf.ln(15) 
     pdf.set_font("helvetica", "B", 11)
     pdf.cell(0, 8, "  2. PROYECCIÓN DE CRECIMIENTO ANUAL", ln=True)
-    
-    pdf.set_font("helvetica", "B", 9)
-    pdf.set_fill_color(59, 130, 246)
-    pdf.set_text_color(255, 255, 255)
-    pdf.cell(45, 8, "Año", 1, 0, "C", True)
-    pdf.cell(45, 8, "Edad", 1, 0, "C", True)
-    pdf.cell(95, 8, "Pensión Estimada Mensual", 1, 1, "C", True)
-    
-    pdf.set_font("helvetica", "", 9)
-    pdf.set_text_color(0, 0, 0)
-    for i, row in df.iterrows():
-        pdf.cell(45, 7, str(int(row['Año'])), 1, 0, "C")
-        pdf.cell(45, 7, str(int(row['Edad'])), 1, 0, "C")
-        pdf.cell(95, 7, f"${row['Pensión']:,.2f} MXN", 1, 1, "R")
-
-    # 5. TÉRMINOS
     pdf.ln(5)
-    pdf.set_font("helvetica", "B", 8)
-    pdf.cell(0, 4, "TÉRMINOS Y CONDICIONES:", ln=True)
-    pdf.set_font("helvetica", "", 7)
-    pdf.multi_cell(0, 3, "Cálculos informativos basados en la Ley 1973. Sujeto a cambios por el IMSS e inflación.")
-
-    # 6. FIRMA Y NOMBRE CENTRADO
-    # Colocamos la firma a la derecha pero centrando el texto abajo
+    
+    # Firma y nombre centrado abajo
     pdf.set_y(250)
-    x_firma = 150 # Posición horizontal para el bloque de firma
-    try:
-        pdf.image("assets/firma.png", x_firma, 242, 40) # Imagen de la firma
-    except:
-        pdf.line(x_firma, 260, x_firma + 40, 260) 
+    try: pdf.image("assets/firma.png", 150, 235, 40)
+    except: pdf.line(150, 255, 190, 255)
     
-    pdf.set_y(262)
+    pdf.set_y(260)
     pdf.set_font("helvetica", "B", 10)
-    pdf.set_x(x_firma - 10) # Ajuste para centrar el nombre respecto a la firma
+    pdf.set_x(140)
     pdf.cell(60, 5, "Ing. Roberto Villarreal Glz", ln=True, align="C")
-    
     pdf.set_font("helvetica", "", 8)
-    pdf.set_x(x_firma - 10)
+    pdf.set_x(140)
     pdf.cell(60, 4, "Especialista en Pensiones Ley 73", ln=True, align="C")
     
     return bytes(pdf.output())
+
+# Interfaz Streamlit (SIN st.divider)
+st.title("OPTIPENSIÓN 73")
+st.markdown("---") # Esto reemplaza la línea que fallaba
+
+edad_val = st.sidebar.number_input("Edad", 50, 70, 57)
+sem_val = st.sidebar.number_input("Semanas", 500, 2500, 1315)
+sal_val = st.sidebar.number_input("Salario", 100.0, 3000.0, 959.15)
+
+# Valores de prueba para ver el PDF
+p_hoy = 14356.06
+p_obj = 16382.65
+df = pd.DataFrame([{"Año": 2026, "Edad": 57, "Pensión": 14356.06}])
+
+pdf_bytes = generar_pdf_pro(df, p_hoy, p_obj, edad_val, 60, sal_val, sem_val)
+st.download_button("📥 Descargar Reporte PDF", pdf_bytes, "Reporte.pdf")
 
 
 # ---------------------------------------------------
