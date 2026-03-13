@@ -12,17 +12,20 @@ from config.parametros import FACTORES_EDAD
 # --- CONFIGURACIÓN SaaS ---
 st.set_page_config(page_title="Optipensión 73 PRO", layout="wide", page_icon="💰")
 
-# --- ESTILOS (Recuperando el Sidebar que se "fue") ---
+# --- ESTILOS PARA FORZAR EL SIDEBAR Y LOGO ---
 st.markdown("""
     <style>
-    [data-testid="stSidebar"] { background-color: #1e2630; }
+    [data-testid="stSidebar"] { background-color: #111827; border-right: 1px solid #374151; }
+    [data-testid="stSidebar"] .stMarkdown h1, h2, h3 { color: white; }
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
+    .stTabs [data-baseweb="tab-list"] { gap: 24px; }
+    .stTabs [data-baseweb="tab"] { font-weight: bold; font-size: 18px; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- REUTILIZANDO TU FUNCIÓN DE PDF PERFECTA (LA DE LOS 80MM) ---
+# --- REUTILIZANDO TU FUNCIÓN DE PDF PERFECTA ---
 def generar_pdf_real(df, p_hoy, p_meta, edad_act, edad_obj, sal, sem, titulo_rep):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
@@ -34,7 +37,7 @@ def generar_pdf_real(df, p_hoy, p_meta, edad_act, edad_obj, sal, sem, titulo_rep
     pdf.set_xy(50, 15)
     pdf.cell(0, 10, titulo_rep, ln=True, align="R")
     
-    pdf.set_y(80) # EL MARGEN DE ÉXITO
+    pdf.set_y(80) 
     pdf.set_fill_color(240, 240, 240)
     pdf.set_font("helvetica", "B", 12)
     pdf.cell(0, 9, "  1. Diagnóstico de Situación Actual", ln=True, fill=True)
@@ -51,7 +54,6 @@ def generar_pdf_real(df, p_hoy, p_meta, edad_act, edad_obj, sal, sem, titulo_rep
     pdf.cell(0, 8, f"      PENSIÓN ESTIMADA: ${p_meta:,.2f} MXN", ln=True)
     pdf.set_text_color(0, 0, 0)
     
-    # Tabla en PDF
     pdf.ln(5)
     pdf.set_font("helvetica", "B", 10)
     pdf.set_fill_color(225, 225, 225)
@@ -74,25 +76,39 @@ def generar_pdf_real(df, p_hoy, p_meta, edad_act, edad_obj, sal, sem, titulo_rep
     pdf.cell(0, 5, "Ing. Roberto Villarreal Glz", ln=True, align="R")
     return bytes(pdf.output())
 
-# --- SIDEBAR (DATOS REALES) ---
+# --- SIDEBAR (DATOS REALES Y LOGO) ---
 with st.sidebar:
-    st.header("⚙️ Configuración Global")
+    try:
+        st.image("assets/image.jpg", width=180)
+    except:
+        st.title("OPTIPENSIÓN 73")
+    
+    st.header("⚙️ Configuración")
     edad_val = st.number_input("Edad actual", 50, 65, 57)
     sem_val = st.number_input("Semanas cotizadas", 500, 3000, 1315)
     sal_val = st.number_input("Salario diario actual (SBC)", 100.0, 3500.0, 959.15)
     inf_val = st.number_input("Inflación estimada %", value=4.5)
     esp_val = st.checkbox("Asignación por esposa", value=True)
 
+# --- CABECERA PRINCIPAL ---
+col_head1, col_head2 = st.columns([1, 4])
+with col_head1:
+    try: st.image("assets/image.jpg", width=100)
+    except: pass
+with col_head2:
+    st.title("OPTIPENSIÓN 73")
+    st.subheader("Consultoría Especializada en Retiro")
+
 # --- PESTAÑAS ---
 tab1, tab2, tab3 = st.tabs(["📊 Escenario Actual", "🚀 Plan Modalidad 40", "📈 Comparativa & ROI"])
 
 # ---------------------------------------------------------
-# PESTAÑA 1: RECUPERANDO TODO LO LOGRADO
+# PESTAÑA 1: RECUPERADO AL 100%
 # ---------------------------------------------------------
 with tab1:
     st.subheader("Análisis de Situación Sin Inversión")
     
-    # Lógica Real de Pensión
+    # Lógica Real
     p_60, _ = calcular_pension_ley73(sal_val, sem_val, edad_val, 60, inf_val, esp_val)
     p_100 = p_60 / 0.75 
     
@@ -115,20 +131,23 @@ with tab1:
             st.download_button("Guardar PDF", pdf_bytes, "Reporte_Actual.pdf")
     
     with c2:
-        fig = px.bar(df_actual, x="Edad", y="Pensión", text_auto=".0f", template="plotly_dark")
+        # Gráfica a color
+        fig = px.bar(df_actual, x="Edad", y="Pensión", text_auto=".2s", 
+                     title="Crecimiento Proyectado",
+                     color="Pensión", color_continuous_scale="Blues")
         st.plotly_chart(fig, use_container_width=True)
 
 # ---------------------------------------------------------
-# PESTAÑA 2: MOD 40 (AISLADA)
+# PESTAÑA 2: MOD 40 (PREPARADA)
 # ---------------------------------------------------------
 with tab2:
-    st.subheader("Simulador Estratégico Mod 40")
-    # (Aquí va la lógica de inversión que no afecta a la Tab 1)
-    u_mas = st.slider("UMAs", 1, 25, 25)
-    st.info("Configura aquí tu inversión sin alterar el diagnóstico inicial.")
+    st.subheader("Configuración de Estrategia Modalidad 40")
+    st.write("Juega con los valores para ver cómo impacta en tu pensión final.")
+    u_m = st.slider("UMAs", 1, 25, 25)
+    st.info("Esta sección es independiente y no borra tus datos de la pestaña 1.")
 
 st.divider()
-st.caption(f"Optipensión 73 PRO | {datetime.now().year}")
+st.caption(f"Ing. Roberto Villarreal Glz. | {datetime.now().year}")
 
 
 # ---------------------------------------------------
