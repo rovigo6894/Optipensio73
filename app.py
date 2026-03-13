@@ -13,25 +13,39 @@ from config.parametros import FACTORES_EDAD
 st.set_page_config(
     page_title="Optipensión 73 PRO", 
     layout="wide", 
-    initial_sidebar_state="expanded" # FORZAR SIDEBAR ABIERTO
+    initial_sidebar_state="expanded" 
 )
 
-# --- ESTILOS CSS REVISADOS ---
+# --- ESTILOS CSS: REDUCCIÓN DE SIDEBAR Y LOGO ---
 st.markdown("""
     <style>
-    [data-testid="stSidebar"] { background-color: #111827; min-width: 300px; }
-    .stTabs [data-baseweb="tab-list"] { gap: 10px; }
+    /* Sidebar más angosto */
+    [data-testid="stSidebar"] { 
+        background-color: #111827; 
+        min-width: 260px !important;
+        max-width: 260px !important;
+    }
+    /* Logo pequeño y centrado en el sidebar */
+    [data-testid="stSidebar"] [data-testid="stImage"] img {
+        width: 120px !important;
+        height: auto;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+    }
+    /* Ajuste de Tabs */
+    .stTabs [data-baseweb="tab-list"] { gap: 15px; }
     .stTabs [data-baseweb="tab"] { font-size: 16px; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- FUNCIÓN PDF RECONSTRUIDA PARA EVITAR ENCIMAMIENTOS ---
+# --- FUNCIÓN PDF ---
 def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
     
-    # Encabezado y Logo
-    try: pdf.image("assets/image.jpg", 10, 10, 35)
+    # Encabezado
+    try: pdf.image("assets/image.jpg", 10, 10, 30) # Logo más pequeño en PDF también
     except: pass
     
     pdf.set_font("helvetica", "B", 16)
@@ -42,11 +56,11 @@ def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
 
     # 1. Datos Base
     pdf.set_y(55)
-    pdf.set_fill_color(230, 230, 230)
+    pdf.set_fill_color(235, 235, 235)
     pdf.set_font("helvetica", "B", 12)
     pdf.cell(0, 8, " 1. Diagnóstico de Situación Actual", ln=True, fill=True)
     pdf.set_font("helvetica", "", 11)
-    pdf.ln(2)
+    pdf.ln(3)
     pdf.cell(0, 6, f"      - Edad actual: {edad_act} años", ln=True)
     pdf.cell(0, 6, f"      - Semanas reconocidas: {sem}", ln=True)
     pdf.cell(0, 6, f"      - Salario Diario (SBC): ${sal:,.2f} MXN", ln=True)
@@ -55,29 +69,29 @@ def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
     pdf.ln(5)
     pdf.set_font("helvetica", "B", 12)
     pdf.cell(0, 8, " 2. Resultados Proyectados", ln=True, fill=True)
-    pdf.ln(3)
+    pdf.ln(4)
     pdf.set_font("helvetica", "B", 13)
     pdf.set_text_color(0, 51, 102)
     pdf.cell(0, 7, f"      PENSIÓN ESTIMADA HOY: ${p_hoy:,.2f} MXN", ln=True)
     pdf.cell(0, 7, f"      PENSIÓN A LOS {edad_obj} AÑOS: ${p_proyectada:,.2f} MXN", ln=True)
     
-    # 3. Tabla (Con espacio suficiente)
-    pdf.ln(5)
+    # 3. Tabla
+    pdf.ln(8)
     pdf.set_text_color(0, 0, 0)
     pdf.set_font("helvetica", "B", 10)
-    pdf.set_fill_color(200, 200, 200)
-    pdf.cell(30, 8, "Año", 1, 0, "C", True)
-    pdf.cell(30, 8, "Edad", 1, 0, "C", True)
+    pdf.set_fill_color(210, 210, 210)
+    pdf.cell(40, 8, "Año", 1, 0, "C", True)
+    pdf.cell(40, 8, "Edad", 1, 0, "C", True)
     pdf.cell(60, 8, "Pensión Mensual", 1, 1, "C", True)
     
     pdf.set_font("helvetica", "", 10)
     for i, row in df.iterrows():
-        if i < 12: # Limitar para que no se encime al pie de página
-            pdf.cell(30, 7, str(int(row['Año'])), 1, 0, "C")
-            pdf.cell(30, 7, str(int(row['Edad'])), 1, 0, "C")
+        if i < 10: 
+            pdf.cell(40, 7, str(int(row['Año'])), 1, 0, "C")
+            pdf.cell(40, 7, str(int(row['Edad'])), 1, 0, "C")
             pdf.cell(60, 7, f"${row['Pensión']:,.2f}", 1, 1, "C")
 
-    # Pie de página y Firma
+    # Firma
     pdf.set_y(260)
     pdf.line(130, 275, 190, 275)
     pdf.set_y(276)
@@ -86,9 +100,9 @@ def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
     
     return bytes(pdf.output())
 
-# --- SIDEBAR (DATOS REALES) ---
+# --- SIDEBAR ---
 with st.sidebar:
-    try: st.image("assets/image.jpg", width=180)
+    try: st.image("assets/image.jpg", width=120)
     except: st.title("OPTIPENSIÓN 73")
     
     st.header("📍 Parámetros Base")
@@ -98,14 +112,14 @@ with st.sidebar:
     inf_val = st.number_input("Inflación Est. %", value=4.5)
     esp_val = st.checkbox("Asignación Esposa", value=True)
 
-# --- CUERPO PRINCIPAL ---
+# --- CABECERA ---
 st.title("OPTIPENSIÓN 73")
 st.subheader("Consultoría Especializada en Retiro")
 
 tab1, tab2, tab3 = st.tabs(["📊 Escenario Actual", "🚀 Estrategia Mod 40", "📈 ROI & Comparativa"])
 
+# PESTAÑA 1
 with tab1:
-    # 1. Cálculos de la tabla
     p_60, _ = calcular_pension_ley73(sal_val, sem_val, edad_val, 60, inf_val, esp_val)
     p_100 = p_60 / 0.75
     
@@ -119,29 +133,31 @@ with tab1:
     
     df_actual = pd.DataFrame(datos)
     
-    # 2. Selector de Edad para Comparación
     st.markdown("### ¿A qué edad planea retirarse?")
-    edad_obj = st.select_slider("Seleccione edad de retiro", options=list(range(60, 66)), value=60)
+    edad_obj = st.select_slider("Edad de retiro", options=list(range(60, 66)), value=60)
     
     p_hoy = df_actual[df_actual['Edad'] == edad_val]['Pensión'].values[0]
     p_proyectada = df_actual[df_actual['Edad'] == edad_obj]['Pensión'].values[0]
     
-    col1, col2 = st.columns([1, 2])
-    with col1:
-        st.metric("Pensión Estimada Hoy", f"${p_hoy:,.2f}")
-        st.metric(f"Pensión a los {edad_obj} años", f"${p_proyectada:,.2f}", f"+{((p_proyectada/p_hoy)-1)*100:.1f}%")
+    c1, c2 = st.columns([1, 2])
+    with c1:
+        st.metric("Pensión Hoy", f"${p_hoy:,.2f}")
+        st.metric(f"Pensión a los {edad_obj} años", f"${p_proyectada:,.2f}")
         
         if st.button("📥 Descargar Reporte PDF"):
             pdf_out = generar_pdf_pro(df_actual, p_hoy, p_proyectada, edad_val, edad_obj, sal_val, sem_val)
-            st.download_button("Click para Guardar", pdf_out, f"Reporte_Optipension_{edad_val}años.pdf")
+            st.download_button("Guardar PDF", pdf_out, "Reporte_Optipension.pdf")
 
-    with col2:
-        fig = px.bar(df_actual, x="Edad", y="Pensión", color="Pensión", color_continuous_scale="Blues", text_auto=".2s")
+    with c2:
+        fig = px.bar(df_actual, x="Edad", y="Pensión", color="Pensión", color_continuous_scale="Blues")
         st.plotly_chart(fig, use_container_width=True)
 
+# PESTAÑAS VACÍAS PARA LLENAR DESPUÉS
 with tab2:
-    st.subheader("Simulador Modalidad 40")
-    st.info("Pestaña en configuración para la estrategia de inversión.")
+    st.info("Pestaña de Modalidad 40 en preparación.")
+
+with tab3:
+    st.info("Pestaña de ROI y Comparativas en preparación.")
 
 st.caption(f"Ing. Roberto Villarreal Glz. | 2026")
 
