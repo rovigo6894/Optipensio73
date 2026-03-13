@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 from datetime import datetime
@@ -97,7 +96,7 @@ if st.button("Recalcular simulación"):
     # RESULTADO PRINCIPAL
     st.success(f"### 💰 Pensión estimada actual: ${pension_hoy:,.0f} MXN")
 
-    # BOTON AZUL PROYECCION
+    # RESULTADO PROYECTADO
     st.info(f"### 📈 Pensión proyectada al retiro: ${pension_futura:,.0f} MXN")
 
 
@@ -115,6 +114,7 @@ if st.button("Recalcular simulación"):
     for i in range(anos + 1):
 
         datos.append({
+            "Edad": edad_actual + i,
             "Año": ano_actual + i,
             "Pensión mensual": pension
         })
@@ -125,21 +125,21 @@ if st.button("Recalcular simulación"):
 
 
     # ---------------------------------------------------
-    # GRAFICA
+    # GRAFICA DE BARRAS
     # ---------------------------------------------------
 
-    st.subheader("Proyección de crecimiento de la pensión")
+    st.subheader("📊 Proyección de crecimiento de la pensión")
 
-    fig = px.line(
+    fig = px.bar(
         df,
-        x="Año",
+        x="Edad",
         y="Pensión mensual",
-        markers=True
+        text_auto=".0f"
     )
 
     fig.update_layout(
         template="plotly_dark",
-        xaxis_title="Año",
+        xaxis_title="Edad",
         yaxis_title="Pensión mensual MXN"
     )
 
@@ -150,7 +150,7 @@ if st.button("Recalcular simulación"):
     # TABLA
     # ---------------------------------------------------
 
-    st.subheader("Tabla de proyección anual")
+    st.subheader("📋 Tabla de proyección anual")
 
     df["Pensión mensual"] = df["Pensión mensual"].map(lambda x: f"${x:,.2f}")
 
@@ -161,7 +161,7 @@ if st.button("Recalcular simulación"):
 
 
 # ---------------------------------------------------
-# FOOTER CENTRADO
+# FOOTER
 # ---------------------------------------------------
 
 st.divider()
