@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime
 import plotly.express as px
 
-# Importamos la lógica y los parámetros
+# Importación de tu motor y parámetros
 from core.calculadora_pension import calcular_pension_ley73
 from config.parametros import FACTORES_EDAD
 
@@ -36,42 +36,38 @@ esposa = st.checkbox("Asignación por esposa (15%)", value=True)
 
 # --- EJECUCIÓN ---
 if st.button("Recalcular simulación"):
-    # Llamada al motor profesional
     pension_hoy, pension_futura = calcular_pension_ley73(
         salario, semanas, edad_actual, edad_retiro, inflacion, esposa
     )
 
-    st.success(f"### 💰 Pensión estimada actual (a los {Edad actual} años): ${pension_hoy:,.2f} MXN")
-    st.info(f"### 📈 Pensión proyectada al retiro (con inflación): ${pension_futura:,.2f} MXN")
+    # Corrección de sintaxis en las f-strings
+    st.success(f"### 💰 Pensión estimada actual: ${pension_hoy:,.2f} MXN")
+    st.info(f"### 📈 Pensión proyectada al retiro: ${pension_futura:,.2f} MXN")
 
-    # --- PROYECCIÓN ANUAL PARA GRÁFICA ---
-    # Solo proyectamos el efecto del tiempo e inflación sobre la base calculada
+    # --- PROYECCIÓN ANUAL ---
     ano_actual = datetime.now().year
     datos = []
     
     for i in range((edad_retiro - edad_actual) + 1):
-        edad_iter = edad_actual + i
-        anio_iter = ano_actual + i
-        # Crecimiento compuesto por inflación
-        pension_iter = pension_hoy * ((1 + (inflacion/100)) ** i)
-        
+        edad_i = edad_actual + i
+        pension_i = pension_hoy * ((1 + (inflacion/100)) ** i)
         datos.append({
-            "Edad": edad_iter,
-            "Año": anio_iter,
-            "Pensión mensual": round(pension_iter, 2)
+            "Edad": edad_i,
+            "Año": ano_actual + i,
+            "Pensión mensual": round(pension_i, 2)
         })
 
     df = pd.DataFrame(datos)
 
-    # --- VISUALIZACIÓN ---
-    st.subheader("📊 Proyección de crecimiento de la pensión")
-    fig = px.bar(df, x="Edad", y="Pensión mensual", text_auto=".0f", template="plotly_dark")
+    # --- GRÁFICA ---
+    st.subheader("📊 Proyección de crecimiento")
+    fig = px.bar(df, x="Edad", y="Pensión mensual", template="plotly_dark", text_auto=".0f")
     fig.update_traces(marker_color='#1E88E5')
     st.plotly_chart(fig, use_container_width=True)
 
-    st.subheader("📋 Tabla de proyección anual")
+    # --- TABLA ---
+    st.subheader("📋 Tabla de proyección")
     st.dataframe(df.style.format({"Pensión mensual": "${:,.2f}"}), use_container_width=True)
 
-# --- FOOTER LEGAL ---
 st.divider()
 st.markdown("<div style='text-align:center;'>© 2026 Optipensión 73 · Versión PRO</div>", unsafe_allow_html=True)
