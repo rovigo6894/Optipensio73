@@ -29,7 +29,7 @@ st.set_page_config(
     page_icon="💰"
 )
 
-# --- FUNCIÓN PDF: POSICIONAMIENTO ABSOLUTO ---
+# --- FUNCIÓN PDF: MARGEN EXTREMO ---
 def generar_pdf(df, p_hoy, p_meta, edad_act, edad_obj, sal, sem):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
@@ -37,8 +37,8 @@ def generar_pdf(df, p_hoy, p_meta, edad_act, edad_obj, sal, sem):
     
     # 1. ENCABEZADO
     try:
-        # Colocamos el logo en la esquina superior izquierda
-        pdf.image("assets/image.jpg", 12, 12, 35) 
+        # Reducimos un poco el ancho del logo para que el "aire" alrededor sea menor
+        pdf.image("assets/image.jpg", 12, 10, 30) 
     except:
         pass
         
@@ -49,9 +49,8 @@ def generar_pdf(df, p_hoy, p_meta, edad_act, edad_obj, sal, sem):
     pdf.set_x(50)
     pdf.cell(0, 7, "Consultoría Especializada Ley 1973", ln=True, align="R")
     
-    # --- BLOQUE DE CONTROL: BAJAMOS EL CURSOR A LA FUERZA ---
-    # Colocamos el primer encabezado en la coordenada Y=65 para que no toque el logo
-    pdf.set_y(65) 
+    # --- AJUSTE CRÍTICO: BAJAMOS A 80MM PARA DAR ESPACIO TOTAL ---
+    pdf.set_y(80) 
 
     # 2. SECCIÓN DATOS
     pdf.set_fill_color(240, 240, 240)
@@ -63,7 +62,7 @@ def generar_pdf(df, p_hoy, p_meta, edad_act, edad_obj, sal, sem):
     pdf.cell(0, 6, f"      - Semanas Cotizadas: {sem} semanas", ln=True)
     pdf.cell(0, 6, f"      - Salario Diario (SBC): ${sal:,.2f} MXN", ln=True)
     
-    pdf.ln(6)
+    pdf.ln(5)
 
     # 3. RESULTADOS
     pdf.set_font("helvetica", "B", 12)
@@ -77,26 +76,26 @@ def generar_pdf(df, p_hoy, p_meta, edad_act, edad_obj, sal, sem):
     pdf.cell(0, 8, f"      PENSIÓN A LOS {edad_obj} AÑOS: ${p_meta:,.2f} MXN", ln=True)
     pdf.set_text_color(0, 0, 0)
     
-    pdf.ln(6)
+    pdf.ln(5)
 
-    # 4. TABLA (COMPACTA)
+    # 4. TABLA (REDUCIMOS FILAS PARA QUE QUEPA TODO ABAJO)
     pdf.set_font("helvetica", "B", 10)
     pdf.set_fill_color(225, 225, 225)
     pdf.cell(30, 7, "Año", border=1, align="C", fill=True)
-    pdf.cell(30, 7, "Edad", border=1, align="C", fill=True)
-    pdf.cell(70, 7, "Pensión Mensual Proyectada", border=1, align="C", fill=True)
+    pdf.cell(20, 7, "Edad", border=1, align="C", fill=True)
+    pdf.cell(80, 7, "Pensión Mensual Proyectada", border=1, align="C", fill=True)
     pdf.ln()
     
     pdf.set_font("helvetica", "", 10)
-    # Filtro de seguridad para que no se pase de la hoja
-    for index, row in df.head(8).iterrows():
+    # Mostramos máximo 7 filas para dejar espacio a la firma sin saltar de página
+    for index, row in df.head(7).iterrows():
         pdf.cell(30, 6, str(int(row['Año'])), border=1, align="C")
-        pdf.cell(30, 6, str(int(row['Edad'])), border=1, align="C")
-        pdf.cell(70, 6, f"${row['Pensión']:,.2f} MXN", border=1, align="C")
+        pdf.cell(20, 6, str(int(row['Edad'])), border=1, align="C")
+        pdf.cell(80, 6, f"${row['Pensión']:,.2f} MXN", border=1, align="C")
         pdf.ln()
 
-    # 5. BLOQUE LEGAL (CERCA DEL FINAL)
-    pdf.set_y(238) 
+    # 5. BLOQUE LEGAL
+    pdf.set_y(235) 
     pdf.set_font("helvetica", "B", 9)
     pdf.cell(0, 5, "Notas Legales:", ln=True)
     pdf.set_font("helvetica", "I", 8)
@@ -104,15 +103,15 @@ def generar_pdf(df, p_hoy, p_meta, edad_act, edad_obj, sal, sem):
     pdf.multi_cell(0, 4, "Este reporte es informativo y no constituye un dictamen oficial del IMSS. Basado en Ley 73.")
     
     # 6. FIRMA
-    pdf.set_y(255)
+    pdf.set_y(250)
     pdf.set_text_color(0, 0, 0)
-    pdf.line(130, 270, 195, 270) 
+    pdf.line(130, 268, 195, 268) 
     try:
-        pdf.image("assets/firma.png", 145, 250, 40) 
+        pdf.image("assets/firma.png", 145, 248, 35) 
     except:
         pass
     
-    pdf.set_y(272)
+    pdf.set_y(270)
     pdf.set_font("helvetica", "B", 10)
     pdf.cell(0, 5, "Ing. Roberto Villarreal Glz", ln=True, align="R")
     pdf.set_font("helvetica", "", 9)
@@ -120,9 +119,7 @@ def generar_pdf(df, p_hoy, p_meta, edad_act, edad_obj, sal, sem):
     
     return bytes(pdf.output())
 
-# ---------------------------------------------------
-# LÓGICA DE STREAMLIT (Sigue igual)
-# ---------------------------------------------------
+# --- RESTO DEL CÓDIGO IGUAL ---
 col_logo, col_title = st.columns([1,4])
 with col_logo:
     st.image("assets/image.jpg", width=85)
