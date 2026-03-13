@@ -9,7 +9,7 @@ import io
 from core.calculadora_pension import calcular_pension_ley73
 from config.parametros import FACTORES_EDAD
 
-# --- OCULTAR OPCIONES DE STREAMLIT ---
+# --- OCULTAR ELEMENTOS DE STREAMLIT ---
 st.markdown("""
     <style>
     #MainMenu {visibility: hidden;}
@@ -29,83 +29,93 @@ st.set_page_config(
     page_icon="💰"
 )
 
-# --- FUNCIÓN PARA GENERAR EL PDF (CORREGIDA) ---
+# --- FUNCIÓN PARA GENERAR EL PDF (PÁGINA COMPLETA) ---
 def generar_pdf(df, p_hoy, p_meta, edad_act, edad_obj, sal, sem):
     pdf = FPDF()
     pdf.add_page()
-    pdf.set_margins(15, 15, 15) # Márgenes fijos para evitar errores de espacio
+    pdf.set_margins(20, 20, 20)
     
-    # 1. LOGO
+    # 1. LOGO Y ENCABEZADO
     try:
-        pdf.image("assets/image.jpg", 10, 10, 25) 
+        pdf.image("assets/image.jpg", 15, 15, 30) 
     except:
         pass
         
-    # 2. ENCABEZADO
-    pdf.set_font("helvetica", "B", 18)
-    pdf.ln(10)
-    pdf.cell(0, 10, "Reporte Estrategico de Pension IMSS", ln=True, align="C")
+    pdf.set_font("helvetica", "B", 22)
+    pdf.ln(15)
+    pdf.cell(0, 15, "Reporte Estrategico de Pension IMSS", ln=True, align="R")
+    pdf.set_font("helvetica", "", 14)
+    pdf.cell(0, 8, "Consultoria Especializada Ley 1973", ln=True, align="R")
+    pdf.set_font("helvetica", "I", 10)
+    pdf.cell(0, 8, f"Fecha de Analisis: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True, align="R")
+    
+    pdf.ln(25) # Espaciado para cubrir la hoja
+
+    # 2. SECCIÓN DE DATOS BASE
+    pdf.set_fill_color(230, 235, 245)
+    pdf.set_font("helvetica", "B", 14)
+    pdf.cell(0, 12, "  1. Diagnostico de Situacion Actual", ln=True, fill=True)
+    pdf.ln(5)
     pdf.set_font("helvetica", "", 12)
-    pdf.cell(0, 10, "Ley del Seguro Social 1973", ln=True, align="C")
-    pdf.set_font("helvetica", "I", 9)
-    pdf.cell(0, 10, f"Generado el: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True, align="C")
+    pdf.cell(0, 10, f"  - Edad del Asegurado: {edad_act} anos", ln=True)
+    pdf.cell(0, 10, f"  - Historial de Semanas: {sem} semanas", ln=True)
+    pdf.cell(0, 10, f"  - Salario Base de Cotizacion (SBC): ${sal:,.2f} MXN", ln=True)
     
-    pdf.ln(10)
+    pdf.ln(15)
 
-    # 3. DATOS DEL TRABAJADOR
-    pdf.set_fill_color(240, 240, 240)
-    pdf.set_font("helvetica", "B", 12)
-    pdf.cell(0, 10, "  1. Datos Base para el Calculo:", ln=True, fill=True)
-    pdf.ln(2)
-    pdf.set_font("helvetica", "", 11)
-    pdf.cell(0, 7, f"  - Edad al momento del analisis: {edad_act} anos", ln=True)
-    pdf.cell(0, 7, f"  - Semanas cotizadas registradas: {sem}", ln=True)
-    pdf.cell(0, 7, f"  - Salario Diario Integrado (SDI): ${sal:,.2f} MXN", ln=True)
-    
-    pdf.ln(8)
-
-    # 4. RESULTADOS PROYECTADOS
-    pdf.set_font("helvetica", "B", 12)
-    pdf.cell(0, 10, "  2. Proyeccion Estimada:", ln=True, fill=True)
-    pdf.ln(2)
-    pdf.set_font("helvetica", "", 11)
-    pdf.cell(0, 9, f"  Pension estimada con parametros actuales: ${p_hoy:,.2f} MXN", ln=True)
-    pdf.set_font("helvetica", "B", 12)
-    pdf.set_text_color(0, 51, 102)
-    pdf.cell(0, 10, f"  PENSION PROYECTADA AL RETIRO ({edad_obj} ANOS): ${p_meta:,.2f} MXN", ln=True)
+    # 3. RESULTADOS DE PROYECCIÓN
+    pdf.set_font("helvetica", "B", 14)
+    pdf.cell(0, 12, "  2. Resultados de la Proyeccion", ln=True, fill=True)
+    pdf.ln(5)
+    pdf.set_font("helvetica", "", 12)
+    pdf.cell(0, 10, f"  Estimacion de pension a la edad actual: ${p_hoy:,.2f} MXN", ln=True)
+    pdf.ln(5)
+    pdf.set_font("helvetica", "B", 16)
+    pdf.set_text_color(0, 50, 100)
+    pdf.cell(0, 12, f"  PENSION OBJETIVO A LOS {edad_obj} ANOS: ${p_meta:,.2f} MXN", ln=True)
     pdf.set_text_color(0, 0, 0)
     
-    pdf.ln(10)
+    pdf.ln(15)
 
-    # 5. DESCARGOS LEGALES (Corregido el ancho para evitar error de renderizado)
+    # 4. TABLA DE CRECIMIENTO (Para llenar la hoja con valor)
+    pdf.set_font("helvetica", "B", 12)
+    pdf.cell(0, 10, "  Proyeccion Anual de Incremento:", ln=True)
     pdf.set_font("helvetica", "B", 10)
-    pdf.cell(0, 7, "3. Notas Legales y Exencion de Responsabilidad:", ln=True)
-    pdf.set_font("helvetica", "", 8)
-    pdf.set_text_color(80, 80, 80)
+    # Encabezados de tabla
+    pdf.cell(40, 8, "Año", border=1, align="C")
+    pdf.cell(40, 8, "Edad", border=1, align="C")
+    pdf.cell(80, 8, "Monto Estimado Mensual", border=1, align="C")
+    pdf.ln()
     
-    # Usamos multi_cell con un ancho definido (0 es hasta el margen derecho)
-    txt_legal = (
-        "a) Este documento es una proyeccion informativa basada en la Ley 73 del IMSS. "
-        "b) Los resultados son estimaciones y pueden variar segun cambios en la legislacion o criterios oficiales del Instituto. "
-        "c) Este reporte NO constituye un dictamen legal, resolucion de pension u oferta vinculante por parte del consultor. "
-        "d) El Ing. Roberto Villarreal Glz. no se hace responsable por decisiones financieras tomadas basadas en esta proyeccion. "
-        "e) Se recomienda validar sus datos ante las instancias oficiales del IMSS antes de iniciar tramites."
-    )
-    pdf.multi_cell(0, 5, txt_legal)
-    
-    pdf.set_text_color(0, 0, 0)
-    pdf.ln(10)
+    pdf.set_font("helvetica", "", 10)
+    # Mostrar solo los primeros 5 registros para no saturar
+    for index, row in df.head(6).iterrows():
+        pdf.cell(40, 8, str(int(row['Año'])), border=1, align="C")
+        pdf.cell(40, 8, str(int(row['Edad'])), border=1, align="C")
+        pdf.cell(80, 8, f"${row['Pensión']:,.2f} MXN", border=1, align="C")
+        pdf.ln()
 
-    # 6. BLOQUE DE FIRMA
-    y_actual = pdf.get_y()
-    # Si la firma queda muy abajo, saltamos de página, pero aquí hay espacio
-    pdf.line(120, y_actual + 20, 190, y_actual + 20)
+    # 5. BLOQUE LEGAL (Base de la página)
+    pdf.set_y(-75) 
+    pdf.set_font("helvetica", "I", 8)
+    pdf.set_text_color(100, 100, 100)
+    aviso = (
+        "NOTAS LEGALES: Este documento es una proyeccion informativa basada en los datos proporcionados por el cliente y la Ley 73 del IMSS. "
+        "No constituye una resolucion oficial ni garantiza el monto final. El Ing. Roberto Villarreal Glz. no se hace responsable por "
+        "decisiones tomadas con base en este simulador. Se recomienda ratificar datos ante el Instituto."
+    )
+    pdf.multi_cell(0, 4, aviso, align="J")
+    
+    # 6. FIRMA PROFESIONAL
+    pdf.set_y(-45)
+    pdf.set_text_color(0, 0, 0)
+    pdf.line(120, pdf.get_y() + 15, 190, pdf.get_y() + 15)
     try:
-        pdf.image("assets/firma.png", 135, y_actual - 5, 45) 
+        pdf.image("assets/firma.png", 135, pdf.get_y() - 15, 45) # Firma sobre la línea
     except:
         pass
     
-    pdf.set_y(y_actual + 22)
+    pdf.set_y(-28)
     pdf.set_font("helvetica", "B", 11)
     pdf.cell(0, 6, "Ing. Roberto Villarreal Glz", ln=True, align="R")
     pdf.set_font("helvetica", "", 10)
@@ -114,63 +124,67 @@ def generar_pdf(df, p_hoy, p_meta, edad_act, edad_obj, sal, sem):
     return bytes(pdf.output())
 
 # ---------------------------------------------------
-# INTERFAZ DE USUARIO (APP)
+# LÓGICA DE LA APLICACIÓN
 # ---------------------------------------------------
 col_logo, col_title = st.columns([1,4])
 with col_logo:
     st.image("assets/image.jpg", width=85)
 with col_title:
     st.title("Optipensión 73")
-    st.caption("Consultoría Estratégica en Pensiones IMSS")
+    st.caption("Estrategia Integral para tu Retiro")
 
 st.divider()
 
-st.subheader("Configuración de la simulación")
+st.subheader("Configuración del Cálculo")
 c1, c2 = st.columns(2)
 
 with c1:
-    edad_val = st.number_input("Edad actual", min_value=50, max_value=65, value=57)
-    sem_val = st.number_input("Semanas cotizadas", min_value=500, max_value=3000, value=1315)
+    ed_u = st.number_input("Edad actual", 50, 65, 57)
+    se_u = st.number_input("Semanas reconocidas", 500, 3000, 1315)
 
 with c2:
-    sal_val = st.number_input("Salario diario (SDI)", min_value=100.0, value=960.0)
-    edad_meta = st.selectbox("Edad de retiro objetivo", [60,61,62,63,64,65], index=0)
+    sa_u = st.number_input("Salario Diario (SDI)", 100.0, 3000.0, 960.0)
+    ed_m = st.selectbox("Edad objetivo de retiro", [60,61,62,63,64,65], index=0)
 
-inf_val = st.number_input("Inflación anual estimada (%)", value=4.5)
-esp_val = st.checkbox("Asignación por esposa (15%)", value=True)
+inf_u = st.number_input("Inflación estimada anual (%)", 4.5)
+esp_u = st.checkbox("Asignación Familiar (Esposa/Concubina)", True)
 
-if st.button("Generar Proyección Profesional"):
-    p_60, _ = calcular_pension_ley73(sal_val, sem_val, edad_val, 60, inf_val, esp_val)
+if st.button("Generar Analisis y Reporte PDF"):
+    # Cálculos
+    p_60, _ = calcular_pension_ley73(sa_u, se_u, ed_u, 60, inf_u, esp_u)
     p_100 = p_60 / 0.75 
     
-    datos_l = []
-    for i in range((65 - edad_val) + 1):
-        ed_i = edad_val + i
-        f_i = (1 + (inf_val/100)) ** i
-        f_ed = 0.75 if ed_i < 60 else FACTORES_EDAD.get(ed_i, 1.0)
-        p_i = (p_100 * f_ed) * f_i
-        datos_l.append({"Año": 2026 + i, "Edad": ed_i, "Pensión": round(p_i, 2)})
+    datos_graf = []
+    for i in range((65 - ed_u) + 1):
+        e_i = ed_u + i
+        f_i = (1 + (inf_u/100)) ** i
+        f_e = 0.75 if e_i < 60 else FACTORES_EDAD.get(e_i, 1.0)
+        p_i = (p_100 * f_e) * f_i
+        datos_graf.append({"Año": 2026 + i, "Edad": e_i, "Pensión": round(p_i, 2)})
 
-    df_res = pd.DataFrame(datos_l)
-    val_h = df_res[df_res['Edad'] == edad_val]['Pensión'].values[0]
-    val_m = df_res[df_res['Edad'] == edad_meta]['Pensión'].values[0]
+    df_res = pd.DataFrame(datos_graf)
+    p_ahora = df_res[df_res['Edad'] == ed_u]['Pensión'].values[0]
+    p_meta = df_res[df_res['Edad'] == ed_m]['Pensión'].values[0]
 
-    st.success(f"### 💰 Estimación a edad actual: ${val_h:,.2f} MXN")
-    st.info(f"### 📈 Proyección al retiro ({edad_meta} años): ${val_m:,.2f} MXN")
+    st.success(f"### 💰 Pensión Estimada Hoy: ${p_ahora:,.2f} MXN")
+    st.info(f"### 📈 Proyección a los {ed_m} años: ${p_meta:,.2f} MXN")
 
-    fig = px.bar(df_res, x="Edad", y="Pensión", template="plotly_dark", text_auto=".0f")
+    fig = px.bar(df_res, x="Edad", y="Pensión", template="plotly_dark", text_auto=".0f", color="Pensión")
     st.plotly_chart(fig, use_container_width=True)
 
     try:
-        pdf_out = generar_pdf(df_res, val_h, val_m, edad_val, edad_meta, sal_val, sem_val)
+        pdf_final = generar_pdf(df_res, p_ahora, p_meta, ed_u, ed_m, sa_u, se_u)
         st.download_button(
-            label="📥 Descargar Reporte PDF Protegido",
-            data=pdf_out,
-            file_name=f"Reporte_Optipension_{edad_val}anos.pdf",
+            label="📥 DESCARGAR REPORTE PROFESIONAL PARA CLIENTE",
+            data=pdf_final,
+            file_name=f"Reporte_Optipension_{ed_u}anos.pdf",
             mime="application/pdf"
         )
     except Exception as e:
-        st.error(f"Error al generar el PDF: {e}")
+        st.error(f"Error técnico en PDF: {e}")
+
+st.divider()
+st.markdown("<p style='text-align:center;'><b>Optipensión 73</b> | Torreón, Coahuila | Ing. Roberto Villarreal</p>", unsafe_allow_html=True)
 
 
 # ---------------------------------------------------
