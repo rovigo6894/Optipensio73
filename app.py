@@ -172,20 +172,31 @@ def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
     pdf.cell(0, 4, "Los resultados pueden variar según la legislación vigente y condiciones individuales.", ln=True, align='C')
     pdf.cell(0, 4, "Se recomienda validar la información con un asesor certificado.", ln=True, align='C')
     
-    # === FIRMA CENTRADA CON IMAGEN ===
-    pdf.set_y(250)
+    # === FIRMA CON LÍNEA ARRIBA Y CARGO DEBAJO ===
+    pdf.set_y(245)  # Posición vertical para la firma
     
-    # Intentar poner la firma si existe
+    # Línea horizontal para la firma
+    pdf.line(120, 250, 190, 250)  # x1, y1, x2, y2
+    
+    # Intentar poner la imagen de la firma sobre la línea
     try:
-        pdf.image("assets/firma.png", 140, 245, 40)  # Ajustar según tamaño de la firma
+        # Posicionar la firma justo encima de la línea
+        pdf.image("assets/firma.png", 140, 235, 40)  # Ajustar según tamaño de la firma
     except:
-        # Si no hay imagen de firma, usar línea y texto
-        pdf.line(120, 255, 190, 255)
+        # Si no hay imagen, dejar espacio para firma manuscrita
+        pass
     
-    pdf.set_xy(120, 257)
-    pdf.set_font("helvetica", "B", 9)
+    # Nombre centrado debajo de la línea
+    pdf.set_xy(120, 252)
+    pdf.set_font("helvetica", "B", 10)
     pdf.set_text_color(0, 0, 0)
     pdf.cell(70, 5, "Ing. Roberto Villarreal Glz", ln=True, align='C')
+    
+    # Cargo debajo del nombre
+    pdf.set_xy(120, 257)
+    pdf.set_font("helvetica", "", 9)
+    pdf.set_text_color(80, 80, 80)
+    pdf.cell(70, 5, "Director General - Optipensión 73", ln=True, align='C')
     
     return bytes(pdf.output())
 
