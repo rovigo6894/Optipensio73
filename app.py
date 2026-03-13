@@ -272,18 +272,18 @@ with tab1:
 
 
 # ============================================
-# PESTAÑA 2: MODALIDAD 40 (CON DATOS DEL SIDEBAR)
+# PESTAÑA 2: MODALIDAD 40 (CON EDAD DE RETIRO DE PESTAÑA 1)
 # ============================================
 with tab2:
     st.markdown("### 🚀 Estrategia de Modalidad 40")
     
-    # Explicación breve
-    st.info("""
-    La Modalidad 40 permite **aumentar tu pensión** cotizando años adicionales 
-    con un salario más alto. Usa los datos ya ingresados en el panel lateral.
+    # Mostrar la edad de retiro seleccionada en pestaña 1
+    st.info(f"""
+    🎯 **Edad de retiro seleccionada: {edad_retiro} años**  
+    *(puedes cambiarla en la pestaña "Escenario Actual")*
     """)
     
-    # MOSTRAR LOS DATOS ACTUALES DEL SIDEBAR (para referencia)
+    # Datos actuales del sidebar (referencia)
     col_ref1, col_ref2, col_ref3 = st.columns(3)
     with col_ref1:
         st.metric("Edad actual", f"{edad_val} años")
@@ -294,7 +294,7 @@ with tab2:
     
     st.markdown("---")
     
-    # Parámetros específicos para M40 (solo los que cambian)
+    # Parámetros específicos para M40
     col1, col2 = st.columns(2)
     
     with col1:
@@ -320,22 +320,22 @@ with tab2:
     # Botón de cálculo
     if st.button("📈 Calcular impacto M40", use_container_width=True, type="primary"):
         
-        # Usar datos del sidebar directamente
+        # Usar datos del sidebar + edad_retiro de pestaña 1
         from core.mod40 import calcular_mod40
         resultado_m40 = calcular_mod40(
-            edad_val,           # del sidebar
-            sem_val,            # del sidebar
-            sal_val,            # del sidebar
-            sal_m40_tope,       # solo este es nuevo
-            meses_m40,          # solo este es nuevo
-            esp_val             # del sidebar
+            edad_val,           # edad actual
+            sem_val,            # semanas
+            sal_val,            # salario actual
+            sal_m40_tope,       # salario M40
+            meses_m40,          # meses en M40
+            edad_retiro,        # <--- EDAD DE RETIRO DE PESTAÑA 1
+            esp_val             # asignación esposa
         )
         
-        # Mostrar resultados con el mismo estilo profesional
+        # Mostrar resultados (igual que antes)
         st.markdown("---")
         st.markdown("### 📊 Resultado de la Estrategia")
         
-        # Tarjetas de resumen
         col_r1, col_r2, col_r3 = st.columns(3)
         
         with col_r1:
@@ -363,7 +363,6 @@ with tab2:
             </div>
             """, unsafe_allow_html=True)
         
-        # Detalles de inversión y recuperación
         col_d1, col_d2, col_d3 = st.columns(3)
         
         with col_d1:
@@ -376,9 +375,6 @@ with tab2:
             st.metric("ROI a 20 años", f"{resultado_m40['roi']}%")
         
         # Gráfica comparativa
-        st.markdown("---")
-        st.markdown("##### 📈 Comparativa: Base vs M40")
-        
         import plotly.graph_objects as go
         
         fig = go.Figure(data=[
@@ -391,7 +387,7 @@ with tab2:
         ])
         
         fig.update_layout(
-            title="Comparación de pensión mensual",
+            title=f"Comparación de pensión mensual (retiro a los {edad_retiro} años)",
             yaxis_title="Pensión mensual ($)",
             yaxis_tickformat="$,.0f",
             height=400,
@@ -401,22 +397,11 @@ with tab2:
         
         st.plotly_chart(fig, use_container_width=True)
         
-        # Utilidad a 20 años
         st.success(f"""
         ### 💰 Utilidad estimada a 20 años: **${resultado_m40['utilidad_20']:,.2f} MXN**
         
         *Considerando el incremento mensual durante 20 años menos la inversión inicial.*
-        """)
-        
-        # Tabla de amortización (opcional)
-        with st.expander("📋 Ver detalle de recuperación"):
-            st.markdown(f"""
-            - **Inversión inicial:** ${resultado_m40['inversion']:,.2f}
-            - **Incremento mensual:** +${incremento:,.2f}
-            - **Meses para recuperar:** {resultado_m40['recuperacion']} meses (~{resultado_m40['recuperacion']/12:.1f} años)
-            - **Utilidad neta en 20 años:** ${resultado_m40['utilidad_20']:,.2f}
-            - **ROI:** {resultado_m40['roi']}%
-            """)     
+        """)    
 
 # PESTAÑAS VACÍAS
 with tab3:
