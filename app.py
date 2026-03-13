@@ -270,10 +270,144 @@ with tab1:
         fig = px.bar(df_actual, x="Edad", y="Pensión", color="Pensión", color_continuous_scale="Blues", text_auto=".2s")
         st.plotly_chart(fig, use_container_width=True)
 
-# PESTAÑAS VACÍAS
+# ============================================
+# PESTAÑA 2: MODALIDAD 40 (ESTILO PROFESIONAL)
+# ============================================
 with tab2:
-    st.info("Pestaña de Modalidad 40 en preparación.")
+    st.markdown("### 🚀 Estrategia de Modalidad 40")
+    
+    # Explicación breve
+    st.info("""
+    La Modalidad 40 permite **aumentar tu pensión** cotizando años adicionales 
+    con un salario más alto. A continuación, calcula el impacto real en tu bolsillo.
+    """)
+    
+    # Parámetros específicos para M40
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        st.markdown("##### 📋 Parámetros actuales")
+        edad_m40 = st.number_input("Edad actual", 50, 65, 57, key="m40_edad")
+        sem_m40 = st.number_input("Semanas cotizadas", 500, 3000, 1315, key="m40_sem")
+        sal_m40 = st.number_input("Salario diario actual", 100.0, 3500.0, 959.15, key="m40_sal")
+        esp_m40 = st.checkbox("Asignación esposa", True, key="m40_esp")
+    
+    with col2:
+        st.markdown("##### ⚙️ Parámetros de la estrategia")
+        sal_m40_tope = st.number_input(
+            "Salario a cotizar en M40", 
+            min_value=500.0, 
+            max_value=5000.0, 
+            value=2932.0, 
+            step=50.0,
+            help="Máximo recomendado: 25 UMAS (~$3,126)"
+        )
+        meses_m40 = st.select_slider(
+            "Meses a cotizar en M40",
+            options=[6, 12, 18, 24, 30, 36, 42, 48],
+            value=36,
+            help="A mayor tiempo, mayor inversión pero también mayor pensión"
+        )
+    
+    # Botón de cálculo
+    if st.button("📈 Calcular impacto M40", use_container_width=True, type="primary"):
+        
+        # Aquí debes llamar a tu función de cálculo real
+        # Por ahora, simulo valores para que se vea la estructura
+        from mod40 import calcular_mod40
+        resultado_m40 = calcular_mod40(
+            edad_m40, sem_m40, sal_m40, 
+            sal_m40_tope, meses_m40, esp_m40
+        )
+        
+        # Mostrar resultados con el mismo estilo profesional
+        st.markdown("---")
+        st.markdown("### 📊 Resultado de la Estrategia")
+        
+        # Tarjetas de resumen (igual que en pestaña 1)
+        col_r1, col_r2, col_r3 = st.columns(3)
+        
+        with col_r1:
+            st.markdown(f"""
+            <div class="metric-container">
+                <div class="metric-label">Pensión Base</div>
+                <div class="metric-value">${resultado_m40['base']:,.2f}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col_r2:
+            st.markdown(f"""
+            <div class="metric-container-pro">
+                <div class="metric-label">Pensión con M40</div>
+                <div class="metric-value">${resultado_m40['con_m40']:,.2f}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        with col_r3:
+            incremento = resultado_m40['con_m40'] - resultado_m40['base']
+            st.markdown(f"""
+            <div style="background-color: #1e293b; padding: 20px; border-radius: 10px; border-left: 5px solid #f59e0b; margin-bottom: 20px;">
+                <div class="metric-label">Incremento mensual</div>
+                <div class="metric-value" style="color: #fbbf24;">+${incremento:,.2f}</div>
+            </div>
+            """, unsafe_allow_html=True)
+        
+        # Detalles de inversión y recuperación
+        col_d1, col_d2, col_d3 = st.columns(3)
+        
+        with col_d1:
+            st.metric("Inversión total", f"${resultado_m40['inversion']:,.2f}")
+        
+        with col_d2:
+            st.metric("Tiempo de recuperación", f"{resultado_m40['recuperacion']} meses")
+        
+        with col_d3:
+            st.metric("ROI a 20 años", f"{resultado_m40['roi']}%")
+        
+        # Gráfica comparativa
+        st.markdown("---")
+        st.markdown("##### 📈 Comparativa: Base vs M40")
+        
+        import plotly.graph_objects as go
+        
+        fig = go.Figure(data=[
+            go.Bar(name='Pensión Base', x=['Actual'], y=[resultado_m40['base']], 
+                   marker_color='#3b82f6', text=[f"${resultado_m40['base']:,.0f}"],
+                   textposition='outside'),
+            go.Bar(name='Con M40', x=['Actual'], y=[resultado_m40['con_m40']], 
+                   marker_color='#10b981', text=[f"${resultado_m40['con_m40']:,.0f}"],
+                   textposition='outside')
+        ])
+        
+        fig.update_layout(
+            title="Comparación de pensión mensual",
+            yaxis_title="Pensión mensual ($)",
+            yaxis_tickformat="$,.0f",
+            height=400,
+            showlegend=True,
+            template="plotly_dark"
+        )
+        
+        st.plotly_chart(fig, use_container_width=True)
+        
+        # Utilidad a 20 años
+        st.success(f"""
+        ### 💰 Utilidad estimada a 20 años: **${resultado_m40['utilidad_20']:,.2f} MXN**
+        
+        *Considerando el incremento mensual durante 20 años menos la inversión inicial.*
+        """)
+        
+        # Tabla de amortización (opcional)
+        with st.expander("📋 Ver detalle de recuperación"):
+            st.markdown(f"""
+            - **Inversión inicial:** ${resultado_m40['inversion']:,.2f}
+            - **Incremento mensual:** +${incremento:,.2f}
+            - **Meses para recuperar:** {resultado_m40['recuperacion']} meses (~{resultado_m40['recuperacion']/12:.1f} años)
+            - **Utilidad neta en 20 años:** ${resultado_m40['utilidad_20']:,.2f}
+            - **ROI:** {resultado_m40['roi']}%
+            """)        
 
+# PESTAÑAS VACÍAS
 with tab3:
     st.info("Pestaña de ROI y Comparativas en preparación.")
 
