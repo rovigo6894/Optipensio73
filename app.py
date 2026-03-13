@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime
 import plotly.express as px
 
-# Importación de tu motor de cálculo (asegúrate de que el nombre del archivo en core coincida)
+# Importación de tu motor de cálculo profesional
 from core.calculadora_pension import calcular_pension_ley73
 
 # ---------------------------------------------------
@@ -21,7 +21,7 @@ st.set_page_config(
 col_logo, col_title = st.columns([1,4])
 
 with col_logo:
-    # Asegúrate de que la ruta assets/image.jpg sea correcta en tu repositorio
+    # Se utiliza la ruta assets/image.jpg como en tu repositorio
     st.image("assets/image.jpg", width=90)
 
 with col_title:
@@ -61,7 +61,7 @@ with col2:
     edad_retiro = st.selectbox(
         "Edad de retiro",
         [60, 61, 62, 63, 64, 65],
-        index=0  # Por defecto 60 años (75%)
+        index=0
     )
 
 inflacion = st.number_input(
@@ -78,22 +78,24 @@ esposa = st.checkbox("Asignación por esposa (15%)", value=True)
 # ---------------------------------------------------
 if st.button("Recalcular simulación"):
     
-    # 1. Ejecución del cálculo profesional desde tu motor
-    # Esta función ya debe incluir el factor de edad (75%-100%) y asignaciones
+    # Llamada a tu motor respetando el orden de argumentos de calculadora_pension.py
+    # Orden: salario_diario, semanas, edad_actual, edad_retiro, inflacion, esposa
     pension_hoy, pension_futura = calcular_pension_ley73(
-        salario_diario=salario,
-        semanas_cotizadas=semanas,
-        edad_actual=edad_actual,
-        edad_retiro=edad_retiro,
-        inflacion_anual=inflacion,
-        esposa=esposa
+        salario,
+        semanas,
+        edad_actual,
+        edad_retiro,
+        inflacion,
+        esposa
     )
 
-    # 2. Despliegue de indicadores principales
+    # Despliegue de resultados con formato de moneda profesional
     st.success(f"### 💰 Pensión estimada actual: ${pension_hoy:,.2f} MXN")
     st.info(f"### 📈 Pensión proyectada al retiro: ${pension_futura:,.2f} MXN")
 
-    # 3. Generación de datos para Proyección Anual (Gráfica y Tabla)
+    # ---------------------------------------------------
+    # PROYECCION PARA GRÁFICA (EFECTO INFLACIONARIO)
+    # ---------------------------------------------------
     ano_actual = datetime.now().year
     datos_proyeccion = []
 
@@ -101,7 +103,7 @@ if st.button("Recalcular simulación"):
         anio = ano_actual + i
         edad_iter = edad_actual + i
         
-        # Proyección basada únicamente en la inflación acumulada sobre la pensión base
+        # Proyección basada en la inflación acumulada sobre la pensión ya calculada
         pension_proyectada = pension_hoy * ((1 + (inflacion/100)) ** i)
         
         datos_proyeccion.append({
@@ -112,7 +114,9 @@ if st.button("Recalcular simulación"):
 
     df = pd.DataFrame(datos_proyeccion)
 
-    # 4. Visualización de Gráfica
+    # ---------------------------------------------------
+    # VISUALIZACIÓN (GRÁFICA Y TABLA)
+    # ---------------------------------------------------
     st.subheader("📊 Proyección de crecimiento de la pensión")
     fig = px.line(
         df, 
@@ -126,9 +130,7 @@ if st.button("Recalcular simulación"):
     fig.update_layout(yaxis_tickformat="$,.0f")
     st.plotly_chart(fig, use_container_width=True)
 
-    # 5. Tabla de Datos
     st.subheader("📋 Tabla de proyección anual")
-    # Formateamos la tabla para que se vea profesional con signos de pesos
     st.dataframe(
         df.style.format({"Pensión mensual": "${:,.2f}", "Año": "{:.0f}"}),
         use_container_width=True
