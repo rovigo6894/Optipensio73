@@ -16,14 +16,26 @@ st.set_page_config(
     initial_sidebar_state="expanded" 
 )
 
-# --- ESTILOS CSS: SIDEBAR, LOGO, RECUADROS Y OCULTAR MENÚS ---
+# --- ESTILOS CSS REVISADOS PARA NO PERDER EL BOTÓN DEL SIDEBAR ---
 st.markdown("""
     <style>
-    /* OCULTAR MENÚS DE STREAMLIT (Esquina superior derecha) */
+    /* Ocultamos el botón de configuración y el menú de hamburguesa, pero NO el header completo */
     #MainMenu {visibility: hidden;}
-    header {visibility: hidden;}
     footer {visibility: hidden;}
     .stDeployButton {display:none;}
+    
+    /* Esto quita el espacio blanco de arriba pero mantiene el botón del sidebar funcional */
+    header[data-testid="stHeader"] {
+        background: rgba(0,0,0,0);
+    }
+    header[data-testid="stHeader"] > div:first-child {
+        visibility: hidden; /* Oculta logo de streamlit y menús */
+    }
+    /* Forzamos que el botón del sidebar sea visible siempre que se necesite */
+    button[kind="header"] {
+        visibility: visible !important;
+        color: white !important;
+    }
 
     /* Sidebar angosto de 260px */
     [data-testid="stSidebar"] { 
@@ -172,7 +184,6 @@ with tab1:
     
     c1, c2 = st.columns([1, 2])
     with c1:
-        # Recuadro Pensión Hoy
         st.markdown(f"""
             <div class="metric-container">
                 <div class="metric-label">Pensión Estimada Hoy</div>
@@ -180,7 +191,6 @@ with tab1:
             </div>
         """, unsafe_allow_html=True)
 
-        # Recuadro Pensión Proyectada
         st.markdown(f"""
             <div class="metric-container-pro">
                 <div class="metric-label">Pensión a los {edad_obj} años</div>
@@ -196,7 +206,6 @@ with tab1:
         fig = px.bar(df_actual, x="Edad", y="Pensión", color="Pensión", color_continuous_scale="Blues", text_auto=".2s")
         st.plotly_chart(fig, use_container_width=True)
 
-# PESTAÑAS VACÍAS
 with tab2:
     st.info("Pestaña de Modalidad 40 en preparación.")
 
