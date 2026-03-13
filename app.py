@@ -29,63 +29,82 @@ st.set_page_config(
     page_icon="💰"
 )
 
-# --- FUNCIÓN PARA GENERAR EL PDF (DISEÑO MEJORADO) ---
+# --- FUNCIÓN PARA GENERAR EL PDF (CON DESCARGOS LEGALES) ---
 def generar_pdf(df, p_hoy, p_meta, edad_act, edad_obj, sal, sem):
     pdf = FPDF()
     pdf.add_page()
     
-    # 1. LOGO (Más chico y elegante)
+    # 1. LOGO
     try:
         pdf.image("assets/image.jpg", 10, 10, 25) 
     except:
         pass
         
-    # 2. ENCABEZADO CENTRADO Y ESPACIADO
+    # 2. ENCABEZADO
     pdf.set_font("helvetica", "B", 18)
     pdf.ln(10)
     pdf.cell(0, 10, "Reporte Estrategico de Pension IMSS", ln=True, align="C")
     pdf.set_font("helvetica", "", 12)
     pdf.cell(0, 10, "Ley del Seguro Social 1973", ln=True, align="C")
     pdf.set_font("helvetica", "I", 9)
-    pdf.cell(0, 10, f"Fecha de emision: {datetime.now().strftime('%d/%m/%Y')}", ln=True, align="C")
-    
-    pdf.ln(20)
-
-    # 3. DATOS TÉCNICOS
-    pdf.set_fill_color(245, 245, 245)
-    pdf.set_font("helvetica", "B", 12)
-    pdf.cell(0, 10, "  Resumen del Perfil:", ln=True, fill=True)
-    pdf.ln(5)
-    pdf.set_font("helvetica", "", 11)
-    pdf.cell(0, 8, f"  * Edad al momento del calculo: {edad_act} anos", ln=True)
-    pdf.cell(0, 8, f"  * Semanas cotizadas reconocidas: {sem}", ln=True)
-    pdf.cell(0, 8, f"  * Salario Diario Integrado (SDI): ${sal:,.2f} MXN", ln=True)
+    pdf.cell(0, 10, f"Generado el: {datetime.now().strftime('%d/%m/%Y a las %H:%M')}", ln=True, align="C")
     
     pdf.ln(15)
 
+    # 3. DATOS DEL TRABAJADOR
+    pdf.set_fill_color(240, 240, 240)
+    pdf.set_font("helvetica", "B", 12)
+    pdf.cell(0, 10, "  1. Datos Base para el Calculo:", ln=True, fill=True)
+    pdf.ln(3)
+    pdf.set_font("helvetica", "", 11)
+    pdf.cell(0, 7, f"  * Edad al momento del analisis: {edad_act} anos", ln=True)
+    pdf.cell(0, 7, f"  * Semanas cotizadas registradas: {sem}", ln=True)
+    pdf.cell(0, 7, f"  * Salario Diario Integrado (SDI): ${sal:,.2f} MXN", ln=True)
+    
+    pdf.ln(10)
+
     # 4. RESULTADOS PROYECTADOS
     pdf.set_font("helvetica", "B", 12)
-    pdf.cell(0, 10, "  Resultados de la Proyeccion:", ln=True, fill=True)
-    pdf.ln(5)
+    pdf.cell(0, 10, "  2. Proyeccion Estimada:", ln=True, fill=True)
+    pdf.ln(3)
     pdf.set_font("helvetica", "", 11)
-    pdf.cell(0, 10, f"  Pension estimada a la edad actual: ${p_hoy:,.2f} MXN", ln=True)
+    pdf.cell(0, 9, f"  Pension estimada con parametros actuales: ${p_hoy:,.2f} MXN", ln=True)
     pdf.set_font("helvetica", "B", 12)
     pdf.set_text_color(0, 51, 102)
     pdf.cell(0, 10, f"  PENSION PROYECTADA AL RETIRO ({edad_obj} ANOS): ${p_meta:,.2f} MXN", ln=True)
     pdf.set_text_color(0, 0, 0)
     
-    pdf.ln(30)
+    pdf.ln(15)
 
-    # 5. BLOQUE DE FIRMA
+    # 5. DESCARGOS LEGALES (IMPORTANTE PARA TU PROTECCIÓN)
+    pdf.set_font("helvetica", "B", 10)
+    pdf.cell(0, 7, "3. Notas Legales y Exencion de Responsabilidad:", ln=True)
+    pdf.set_font("helvetica", "", 8)
+    pdf.set_text_color(80, 80, 80)
+    
+    clausulas = [
+        "a) Este documento es un simulador informativo basado en modelos matematicos de la Ley 73 del IMSS.",
+        "b) Los resultados son ESTIMACIONES y pueden variar segun cambios en la legislacion o criterios del Instituto.",
+        "c) El presente reporte NO constituye un dictamen legal, resolucion de pension u oferta vinculante.",
+        "d) El consultor no se hace responsable por decisiones financieras tomadas basadas en esta proyeccion.",
+        "e) Se recomienda validar siempre sus datos ante las instancias oficiales del IMSS antes de iniciar tramites."
+    ]
+    
+    for c in clausulas:
+        pdf.multi_cell(0, 5, c)
+    
+    pdf.set_text_color(0, 0, 0)
+    pdf.ln(15)
+
+    # 6. BLOQUE DE FIRMA
     y_firma = pdf.get_y()
-    pdf.line(120, y_firma + 20, 190, y_firma + 20)
+    pdf.line(120, y_firma + 15, 190, y_firma + 15)
     try:
-        # Asegúrate de que firma.png tenga fondo transparente
-        pdf.image("assets/firma.png", 135, y_firma - 5, 45) 
+        pdf.image("assets/firma.png", 135, y_firma - 10, 45) 
     except:
         pass
     
-    pdf.set_y(y_firma + 22)
+    pdf.set_y(y_firma + 17)
     pdf.set_font("helvetica", "B", 11)
     pdf.cell(0, 6, "Ing. Roberto Villarreal Glz", ln=True, align="R")
     pdf.set_font("helvetica", "", 10)
@@ -129,7 +148,7 @@ if st.button("Generar Proyección Profesional"):
         f_i = (1 + (inf_a/100)) ** i
         f_e = 0.75 if e_i < 60 else FACTORES_EDAD.get(e_i, 1.0)
         p_i = (p_100 * f_e) * f_i
-        datos_g.append({"Año": datetime.now().year + i, "Edad": e_i, "Pensión": round(p_i, 2)})
+        datos_g.append({"Año": 2026 + i, "Edad": e_i, "Pensión": round(p_i, 2)})
 
     df_res = pd.DataFrame(datos_g)
     val_hoy = df_res[df_res['Edad'] == ed_a]['Pensión'].values[0]
