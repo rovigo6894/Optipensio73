@@ -29,47 +29,46 @@ st.set_page_config(
     page_icon="💰"
 )
 
-# --- FUNCIÓN PDF: DISEÑO PRO CON ESPACIOS CORREGIDOS ---
+# --- FUNCIÓN PDF: POSICIONAMIENTO ABSOLUTO ---
 def generar_pdf(df, p_hoy, p_meta, edad_act, edad_obj, sal, sem):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
     pdf.set_auto_page_break(auto=False) 
     
-    # 1. ENCABEZADO (Logo con espacio)
+    # 1. ENCABEZADO
     try:
-        pdf.image("assets/image.jpg", 12, 12, 38) # Logo a la izquierda
+        # Colocamos el logo en la esquina superior izquierda
+        pdf.image("assets/image.jpg", 12, 12, 35) 
     except:
         pass
         
-    pdf.set_font("helvetica", "B", 20)
-    pdf.set_xy(60, 18)
+    pdf.set_font("helvetica", "B", 18)
+    pdf.set_xy(50, 15)
     pdf.cell(0, 10, "Reporte Estratégico de Pensión IMSS", ln=True, align="R")
-    pdf.set_font("helvetica", "", 12)
-    pdf.set_x(60)
+    pdf.set_font("helvetica", "", 11)
+    pdf.set_x(50)
     pdf.cell(0, 7, "Consultoría Especializada Ley 1973", ln=True, align="R")
-    pdf.set_font("helvetica", "I", 9)
-    pdf.set_x(60)
-    pdf.cell(0, 5, f"Generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True, align="R")
     
-    # --- AQUÍ BAJAMOS TODO EL BLOQUE PARA QUE NO SE EMPALME ---
-    pdf.set_y(55) 
+    # --- BLOQUE DE CONTROL: BAJAMOS EL CURSOR A LA FUERZA ---
+    # Colocamos el primer encabezado en la coordenada Y=65 para que no toque el logo
+    pdf.set_y(65) 
 
     # 2. SECCIÓN DATOS
-    pdf.set_fill_color(245, 245, 245)
+    pdf.set_fill_color(240, 240, 240)
     pdf.set_font("helvetica", "B", 12)
     pdf.cell(0, 9, "  1. Diagnóstico de Situación Actual", ln=True, fill=True)
-    pdf.ln(3)
+    pdf.ln(2)
     pdf.set_font("helvetica", "", 11)
     pdf.cell(0, 6, f"      - Edad del Asegurado: {edad_act} años", ln=True)
     pdf.cell(0, 6, f"      - Semanas Cotizadas: {sem} semanas", ln=True)
     pdf.cell(0, 6, f"      - Salario Diario (SBC): ${sal:,.2f} MXN", ln=True)
     
-    pdf.ln(8)
+    pdf.ln(6)
 
     # 3. RESULTADOS
     pdf.set_font("helvetica", "B", 12)
     pdf.cell(0, 9, "  2. Resultados Proyectados", ln=True, fill=True)
-    pdf.ln(3)
+    pdf.ln(2)
     pdf.set_font("helvetica", "", 11)
     pdf.cell(0, 6, f"      Pensión estimada hoy: ${p_hoy:,.2f} MXN", ln=True)
     pdf.ln(2)
@@ -78,46 +77,42 @@ def generar_pdf(df, p_hoy, p_meta, edad_act, edad_obj, sal, sem):
     pdf.cell(0, 8, f"      PENSIÓN A LOS {edad_obj} AÑOS: ${p_meta:,.2f} MXN", ln=True)
     pdf.set_text_color(0, 0, 0)
     
-    pdf.ln(8)
+    pdf.ln(6)
 
     # 4. TABLA (COMPACTA)
     pdf.set_font("helvetica", "B", 10)
-    pdf.set_fill_color(230, 230, 230)
+    pdf.set_fill_color(225, 225, 225)
     pdf.cell(30, 7, "Año", border=1, align="C", fill=True)
     pdf.cell(30, 7, "Edad", border=1, align="C", fill=True)
     pdf.cell(70, 7, "Pensión Mensual Proyectada", border=1, align="C", fill=True)
     pdf.ln()
     
     pdf.set_font("helvetica", "", 10)
-    # Limitamos a 8 filas para asegurar que quepa la firma en la misma hoja
+    # Filtro de seguridad para que no se pase de la hoja
     for index, row in df.head(8).iterrows():
         pdf.cell(30, 6, str(int(row['Año'])), border=1, align="C")
         pdf.cell(30, 6, str(int(row['Edad'])), border=1, align="C")
         pdf.cell(70, 6, f"${row['Pensión']:,.2f} MXN", border=1, align="C")
         pdf.ln()
 
-    # 5. BLOQUE LEGAL (ANCLADO AL FONDO)
-    pdf.set_y(240) 
+    # 5. BLOQUE LEGAL (CERCA DEL FINAL)
+    pdf.set_y(238) 
     pdf.set_font("helvetica", "B", 9)
     pdf.cell(0, 5, "Notas Legales:", ln=True)
     pdf.set_font("helvetica", "I", 8)
     pdf.set_text_color(100, 100, 100)
-    legal_text = (
-        "Este documento es una proyección informativa basada en la Ley 73 del IMSS. Los montos son estimados y no garantizan "
-        "derechos ante el Instituto. El Ing. Roberto Villarreal Glz no se hace responsable por el uso de esta información."
-    )
-    pdf.multi_cell(0, 4, legal_text)
+    pdf.multi_cell(0, 4, "Este reporte es informativo y no constituye un dictamen oficial del IMSS. Basado en Ley 73.")
     
     # 6. FIRMA
     pdf.set_y(255)
     pdf.set_text_color(0, 0, 0)
-    pdf.line(130, 272, 195, 272) 
+    pdf.line(130, 270, 195, 270) 
     try:
-        pdf.image("assets/firma.png", 145, 252, 40) 
+        pdf.image("assets/firma.png", 145, 250, 40) 
     except:
         pass
     
-    pdf.set_y(274)
+    pdf.set_y(272)
     pdf.set_font("helvetica", "B", 10)
     pdf.cell(0, 5, "Ing. Roberto Villarreal Glz", ln=True, align="R")
     pdf.set_font("helvetica", "", 9)
@@ -126,7 +121,7 @@ def generar_pdf(df, p_hoy, p_meta, edad_act, edad_obj, sal, sem):
     return bytes(pdf.output())
 
 # ---------------------------------------------------
-# INTERFAZ STREAMLIT
+# LÓGICA DE STREAMLIT (Sigue igual)
 # ---------------------------------------------------
 col_logo, col_title = st.columns([1,4])
 with col_logo:
@@ -170,25 +165,12 @@ if st.button("Generar Proyección Profesional"):
     st.success(f"### Pensión hoy: ${val_h:,.2f} MXN")
     st.info(f"### PENSION PROYECTADA AL RETIRO ({edad_meta} AÑOS): ${val_m:,.2f} MXN")
 
-    fig = px.bar(
-        df_res, 
-        x="Edad", 
-        y="Pensión", 
-        color="Pensión",
-        color_continuous_scale="Viridis",
-        template="plotly_dark", 
-        text_auto=".0f"
-    )
+    fig = px.bar(df_res, x="Edad", y="Pensión", color="Pensión", color_continuous_scale="Viridis", template="plotly_dark", text_auto=".0f")
     st.plotly_chart(fig, use_container_width=True)
 
     try:
         pdf_out = generar_pdf(df_res, val_h, val_m, edad_val, edad_meta, sal_val, sem_val)
-        st.download_button(
-            label="📥 Descargar Reporte PDF con Firma",
-            data=pdf_out,
-            file_name=f"Reporte_Optipension_{edad_val}anos.pdf",
-            mime="application/pdf"
-        )
+        st.download_button(label="📥 Descargar Reporte PDF con Firma", data=pdf_out, file_name=f"Reporte_Optipension_{edad_val}anos.pdf", mime="application/pdf")
     except Exception as e:
         st.error(f"Error técnico: {e}")
 
