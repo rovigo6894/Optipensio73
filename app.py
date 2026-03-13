@@ -3,7 +3,7 @@ import pandas as pd
 from datetime import datetime
 import plotly.express as px
 
-# Importación del motor y parámetros centralizados
+# Importación de tu motor y parámetros
 from core.calculadora_pension import calcular_pension_ley73
 from config.parametros import FACTORES_EDAD
 
@@ -42,60 +42,62 @@ with col1:
 
 with col2:
     salario = st.number_input("Salario diario (SDI)", min_value=100.0, value=960.0)
-    edad_retiro = st.selectbox("Edad de retiro deseada", [60,61,62,63,64,65], index=0)
+    edad_retiro_obj = st.selectbox("Edad de retiro objetivo", [60,61,62,63,64,65], index=0)
 
 inflacion = st.number_input("Inflación anual (%)", value=4.5)
 esposa = st.checkbox("Asignación por esposa (15%)", value=True)
 
 # ---------------------------------------------------
-# CALCULO
+# LÓGICA DE PROYECCIÓN Y CÁLCULO
 # ---------------------------------------------------
 if st.button("Recalcular simulación"):
-
-    # Llamada limpia al motor: el motor ya aplica factor de edad y asignaciones
-    pension_hoy, pension_futura = calcular_pension_ley73(
-        salario,
-        semanas,
-        edad_actual,
-        edad_retiro,
-        inflacion,
-        esposa
-    )
-
-    st.success(f"### 💰 Pensión estimada actual (a los {edad_retiro} años): ${pension_hoy:,.2f} MXN")
-    st.info(f"### 📈 Pensión proyectada al retiro (con inflación): ${pension_futura:,.2f} MXN")
-
-    # ---------------------------------------------------
-    # PROYECCION ANUAL (CRECIMIENTO POR INFLACIÓN)
-    # ---------------------------------------------------
+    
+    # Obtenemos la base a los 60 años para proyectar correctamente los factores de edad
+    p_60_hoy, _ = calcular_pension_ley73(salario, semanas, edad_actual, 60, inflacion, esposa)
+    p_base_sin_edad = p_60_hoy / 0.75 # Reversamos el 75% para tener el 100% de la cuantía
+    
     ano_actual = datetime.now().year
     datos = []
 
-    # Proyectamos el efecto del tiempo e inflación sobre la base calculada por el motor
     for i in range((65 - edad_actual) + 1):
-        edad_iter = edad_actual + i
-        anio_iter = ano_actual + i
+        edad_i = edad_actual + i
+        anio_i = ano_actual + i
         
-        # Aplicamos crecimiento compuesto por inflación partiendo del valor base
-        pension_iter = pension_hoy * ((1 + (inflacion/100)) ** i)
+        # 1. Inflación acumulada
+        f_inflacion = (1 + (inflacion/100)) ** i
+        
+        # 2. Factor de edad dinámico
+        if edad_i < 60:
+            f_edad = 0.75 # Ley 73: Mínimo 75% antes de los 60
+        else:
+            f_edad = FACTORES_EDAD.get(edad_i, 1.0)
+        
+        # Pensión final = (Cuantía 100% * Factor Edad) * Inflación
+        pension_i = (p_base_sin_edad * f_edad) * f_inflacion
         
         datos.append({
-            "Edad": edad_iter,
-            "Año": anio_iter,
-            "Pensión mensual": round(pension_iter, 2)
+            "Edad": edad_i,
+            "Año": anio_i,
+            "Factor": f"{int(f_edad*100)}%",
+            "Pensión mensual": round(pension_i, 2)
         })
 
     df = pd.DataFrame(datos)
+    
+    # Resultados destacados
+    p_ahora = df[df['Edad'] == edad_actual]['Pensión mensual'].values[0]
+    p_meta = df[df['Edad'] == edad_retiro_obj]['Pensión mensual'].values[0]
 
-    # ---------------------------------------------------
-    # VISUALIZACIÓN
-    # ---------------------------------------------------
-    st.subheader("📊 Proyección de crecimiento")
+    st.success(f"### 💰 Pensión a la edad actual ({edad_actual} años): ${p_ahora:,.2f} MXN")
+    st.info(f"### 📈 Pensión al retiro objetivo ({edad_retiro_obj} años): ${p_meta:,.2f} MXN")
+
+    # --- VISUALIZACIÓN ---
+    st.subheader("📊 Curva de crecimiento (Inflación + Factor de Edad)")
     fig = px.bar(df, x="Edad", y="Pensión mensual", template="plotly_dark", text_auto=".0f")
     fig.update_traces(marker_color='#1E88E5')
     st.plotly_chart(fig, use_container_width=True)
 
-    st.subheader("📋 Tabla de proyección anual")
+    st.subheader("📋 Tabla de proyección detallada")
     st.dataframe(df.style.format({"Pensión mensual": "${:,.2f}"}), use_container_width=True)
 
 # ---------------------------------------------------
@@ -121,7 +123,8 @@ Los cálculos se realizan en tiempo real.
 
 ### ⚖️ LEGAL
 Propiedad intelectual © 2026  
-**Ing. Roberto Villarreal Glz** 📧 contacto@optipension73.com  
+**Ing. Roberto Villarreal Glz**
+📧 contacto@optipension73.com  
 📱 WhatsApp: 871 579 1810  
 📍 Torreón, Coahuila · México
 
