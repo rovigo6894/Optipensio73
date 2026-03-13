@@ -41,7 +41,7 @@ if st.button("Recalcular simulación"):
         salario, semanas, edad_actual, edad_retiro, inflacion, esposa
     )
 
-    st.success(f"### 💰 Pensión estimada actual (a los {edad_retiro} años): ${pension_hoy:,.2f} MXN")
+    st.success(f"### 💰 Pensión estimada actual (a los {Edad actual} años): ${pension_hoy:,.2f} MXN")
     st.info(f"### 📈 Pensión proyectada al retiro (con inflación): ${pension_futura:,.2f} MXN")
 
     # --- PROYECCIÓN ANUAL PARA GRÁFICA ---
