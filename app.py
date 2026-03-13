@@ -16,7 +16,7 @@ st.set_page_config(
     initial_sidebar_state="expanded" 
 )
 
-# --- ESTILOS CSS: SIDEBAR, LOGO Y AJUSTES DE PESTAÑAS ---
+# --- ESTILOS CSS: SIDEBAR, LOGO Y RECUADROS DE COLORES ---
 st.markdown("""
     <style>
     /* Sidebar angosto de 260px */
@@ -33,10 +33,30 @@ st.markdown("""
         margin-left: auto;
         margin-right: auto;
     }
-    /* Logo pequeño en la página principal */
-    .main-logo img {
-        width: 100px !important;
-        margin-bottom: 10px;
+    /* Estilo para los recuadros de pensiones */
+    .metric-container {
+        background-color: #1e293b;
+        padding: 20px;
+        border-radius: 10px;
+        border-left: 5px solid #3b82f6;
+        margin-bottom: 20px;
+    }
+    .metric-container-pro {
+        background-color: #064e3b;
+        padding: 20px;
+        border-radius: 10px;
+        border-left: 5px solid #10b981;
+        margin-bottom: 20px;
+    }
+    .metric-label {
+        font-size: 14px;
+        color: #94a3b8;
+        margin-bottom: 5px;
+    }
+    .metric-value {
+        font-size: 32px;
+        font-weight: bold;
+        color: white;
     }
     /* Ajuste de Tabs */
     .stTabs [data-baseweb="tab-list"] { gap: 15px; }
@@ -49,7 +69,6 @@ def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
     
-    # Encabezado con Logo
     try: pdf.image("assets/image.jpg", 10, 10, 30)
     except: pass
     
@@ -59,7 +78,6 @@ def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
     pdf.set_font("helvetica", "", 10)
     pdf.cell(0, 5, f"Generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True, align="R")
 
-    # 1. Datos Base
     pdf.set_y(55)
     pdf.set_fill_color(235, 235, 235)
     pdf.set_font("helvetica", "B", 12)
@@ -70,7 +88,6 @@ def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
     pdf.cell(0, 6, f"      - Semanas reconocidas: {sem}", ln=True)
     pdf.cell(0, 6, f"      - Salario Diario (SBC): ${sal:,.2f} MXN", ln=True)
 
-    # 2. Resultados
     pdf.ln(5)
     pdf.set_font("helvetica", "B", 12)
     pdf.cell(0, 8, " 2. Resultados Proyectados", ln=True, fill=True)
@@ -80,7 +97,6 @@ def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
     pdf.cell(0, 7, f"      PENSIÓN ESTIMADA HOY: ${p_hoy:,.2f} MXN", ln=True)
     pdf.cell(0, 7, f"      PENSIÓN A LOS {edad_obj} AÑOS: ${p_proyectada:,.2f} MXN", ln=True)
     
-    # 3. Tabla
     pdf.ln(8)
     pdf.set_text_color(0, 0, 0)
     pdf.set_font("helvetica", "B", 10)
@@ -96,7 +112,6 @@ def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
             pdf.cell(40, 7, str(int(row['Edad'])), 1, 0, "C")
             pdf.cell(60, 7, f"${row['Pensión']:,.2f}", 1, 1, "C")
 
-    # Firma
     pdf.set_y(260)
     pdf.line(130, 275, 190, 275)
     pdf.set_y(276)
@@ -144,22 +159,35 @@ with tab1:
     df_actual = pd.DataFrame(datos)
     
     st.markdown("### ¿A qué edad planea retirarse?")
-    edad_obj = st.select_slider("Edad de retiro", options=list(range(60, 66)), value=60)
+    edad_obj = st.select_slider("Seleccione la edad de retiro para comparar", options=list(range(60, 66)), value=60)
     
     p_hoy = df_actual[df_actual['Edad'] == edad_val]['Pensión'].values[0]
     p_proyectada = df_actual[df_actual['Edad'] == edad_obj]['Pensión'].values[0]
     
     c1, c2 = st.columns([1, 2])
     with c1:
-        st.metric("Pensión Hoy", f"${p_hoy:,.2f}")
-        st.metric(f"Pensión a los {edad_obj} años", f"${p_proyectada:,.2f}")
+        # Recuadro Pensión Hoy
+        st.markdown(f"""
+            <div class="metric-container">
+                <div class="metric-label">Pensión Estimada Hoy</div>
+                <div class="metric-value">${p_hoy:,.2f}</div>
+            </div>
+        """, unsafe_allow_html=True)
+
+        # Recuadro Pensión Proyectada
+        st.markdown(f"""
+            <div class="metric-container-pro">
+                <div class="metric-label">Pensión a los {edad_obj} años</div>
+                <div class="metric-value">${p_proyectada:,.2f}</div>
+            </div>
+        """, unsafe_allow_html=True)
         
         if st.button("📥 Descargar Reporte PDF"):
             pdf_out = generar_pdf_pro(df_actual, p_hoy, p_proyectada, edad_val, edad_obj, sal_val, sem_val)
-            st.download_button("Guardar PDF", pdf_out, "Reporte_Optipension.pdf")
+            st.download_button("Click para Guardar", pdf_out, "Reporte_Optipension.pdf")
 
     with c2:
-        fig = px.bar(df_actual, x="Edad", y="Pensión", color="Pensión", color_continuous_scale="Blues")
+        fig = px.bar(df_actual, x="Edad", y="Pensión", color="Pensión", color_continuous_scale="Blues", text_auto=".2s")
         st.plotly_chart(fig, use_container_width=True)
 
 # PESTAÑAS VACÍAS
