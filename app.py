@@ -16,25 +16,20 @@ st.set_page_config(
     initial_sidebar_state="expanded" 
 )
 
-# --- ESTILOS CSS REVISADOS PARA NO PERDER EL BOTÓN DEL SIDEBAR ---
+# --- ESTILOS CSS REVISADOS: OCULTAR MENÚS SIN ROMPER EL SIDEBAR ---
 st.markdown("""
     <style>
-    /* Ocultamos el botón de configuración y el menú de hamburguesa, pero NO el header completo */
+    /* Ocultar el botón de 'Deploy' y el menú de tres líneas de Streamlit */
+    .stDeployButton {display:none;}
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    .stDeployButton {display:none;}
     
-    /* Esto quita el espacio blanco de arriba pero mantiene el botón del sidebar funcional */
-    header[data-testid="stHeader"] {
-        background: rgba(0,0,0,0);
-    }
-    header[data-testid="stHeader"] > div:first-child {
-        visibility: hidden; /* Oculta logo de streamlit y menús */
-    }
-    /* Forzamos que el botón del sidebar sea visible siempre que se necesite */
-    button[kind="header"] {
-        visibility: visible !important;
+    /* Ajuste para que el botón de expansión (>>) del sidebar sea visible y clickeable */
+    button[data-testid="stSidebarCollapse"] {
+        background-color: #1e293b !important;
         color: white !important;
+        border-radius: 50%;
+        margin-top: 5px;
     }
 
     /* Sidebar angosto de 260px */
@@ -43,6 +38,7 @@ st.markdown("""
         min-width: 260px !important;
         max-width: 260px !important;
     }
+    
     /* Logo pequeño en sidebar */
     [data-testid="stSidebar"] [data-testid="stImage"] img {
         width: 120px !important;
@@ -51,6 +47,7 @@ st.markdown("""
         margin-left: auto;
         margin-right: auto;
     }
+    
     /* Estilo para los recuadros de pensiones */
     .metric-container {
         background-color: #1e293b;
@@ -76,6 +73,7 @@ st.markdown("""
         font-weight: bold;
         color: white;
     }
+    
     /* Ajuste de Tabs */
     .stTabs [data-baseweb="tab-list"] { gap: 15px; }
     .stTabs [data-baseweb="tab"] { font-size: 16px; font-weight: bold; }
