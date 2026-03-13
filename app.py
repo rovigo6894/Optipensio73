@@ -5,128 +5,130 @@ import plotly.express as px
 from fpdf import FPDF 
 import io
 
-# --- CONFIGURACIÓN DE PÁGINA SaaS ---
+# --- RESTAURACIÓN DE TUS ARCHIVOS CORE ---
+from core.calculadora_pension import calcular_pension_ley73
+from config.parametros import FACTORES_EDAD
+
+# --- CONFIGURACIÓN SaaS ---
 st.set_page_config(page_title="Optipensión 73 PRO", layout="wide", page_icon="💰")
 
-# --- ESTILOS PARA OCULTAR INTERFAZ DE STREAMLIT ---
+# --- ESTILOS (Recuperando el Sidebar que se "fue") ---
 st.markdown("""
     <style>
+    [data-testid="stSidebar"] { background-color: #1e2630; }
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
-    .stAppDeployButton {display:none;}
-    [data-testid="stToolbar"] {visibility: hidden !important;}
     </style>
     """, unsafe_allow_html=True)
 
-# --- CARGA DE DATOS Y PARÁMETROS (Simulado para que corra el test) ---
-# Si tienes estos archivos en carpetas, asegúrate de que existan o usa estos locales:
-FACTORES_EDAD = {60: 0.75, 61: 0.80, 62: 0.85, 63: 0.90, 64: 0.95, 65: 1.0}
-
-def calcular_pension_ley73_local(salario, semanas, edad_act, edad_ret, inflacion, esposa):
-    # Lógica simplificada para el test de interfaz
-    factor_semanas = (semanas - 500) / 500 * 0.10 # Ejemplo rápido
-    base = salario * 30.4 * 0.40 # 40% de cuantía básica
-    pension_base = base + (base * factor_semanas)
-    if esposa: pension_base *= 1.15
-    factor_edad = FACTORES_EDAD.get(edad_ret, 1.0)
-    return pension_base * factor_edad, 0
-
-# --- FUNCIÓN PDF (LA QUE YA QUEDÓ AL 100 CON MÁRGENES) ---
-def generar_pdf_pro(df, p_hoy, p_meta, edad_act, edad_obj, sal, sem, titulo):
+# --- REUTILIZANDO TU FUNCIÓN DE PDF PERFECTA (LA DE LOS 80MM) ---
+def generar_pdf_real(df, p_hoy, p_meta, edad_act, edad_obj, sal, sem, titulo_rep):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
     pdf.set_auto_page_break(auto=False) 
     try:
         pdf.image("assets/image.jpg", 12, 10, 32) 
     except: pass
-    
     pdf.set_font("helvetica", "B", 18)
     pdf.set_xy(50, 15)
-    pdf.cell(0, 10, titulo, ln=True, align="R")
+    pdf.cell(0, 10, titulo_rep, ln=True, align="R")
     
-    pdf.set_y(80) # MARGEN DE SEGURIDAD 80mm
+    pdf.set_y(80) # EL MARGEN DE ÉXITO
     pdf.set_fill_color(240, 240, 240)
     pdf.set_font("helvetica", "B", 12)
-    pdf.cell(0, 9, "  1. Datos del Asegurado", ln=True, fill=True)
-    pdf.set_font("helvetica", "", 11)
+    pdf.cell(0, 9, "  1. Diagnóstico de Situación Actual", ln=True, fill=True)
     pdf.ln(2)
-    pdf.cell(0, 6, f"      Edad: {edad_act} años | Semanas: {sem} | SBC: ${sal:,.2f}", ln=True)
+    pdf.set_font("helvetica", "", 11)
+    pdf.cell(0, 6, f"      - Edad: {edad_act} años | Semanas: {sem} | SBC: ${sal:,.2f}", ln=True)
     
     pdf.ln(5)
     pdf.set_font("helvetica", "B", 12)
-    pdf.cell(0, 9, "  2. Resultados del Escenario", ln=True, fill=True)
+    pdf.cell(0, 9, "  2. Resultados Proyectados", ln=True, fill=True)
+    pdf.ln(2)
     pdf.set_font("helvetica", "B", 14)
     pdf.set_text_color(0, 51, 102)
-    pdf.cell(0, 10, f"      Pensión Proyectada: ${p_meta:,.2f} MXN", ln=True)
+    pdf.cell(0, 8, f"      PENSIÓN ESTIMADA: ${p_meta:,.2f} MXN", ln=True)
+    pdf.set_text_color(0, 0, 0)
+    
+    # Tabla en PDF
+    pdf.ln(5)
+    pdf.set_font("helvetica", "B", 10)
+    pdf.set_fill_color(225, 225, 225)
+    pdf.cell(30, 7, "Año", border=1, align="C", fill=True)
+    pdf.cell(20, 7, "Edad", border=1, align="C", fill=True)
+    pdf.cell(80, 7, "Pensión Mensual", border=1, align="C", fill=True)
+    pdf.ln()
+    pdf.set_font("helvetica", "", 10)
+    for index, row in df.head(8).iterrows():
+        pdf.cell(30, 6, str(int(row['Año'])), border=1, align="C")
+        pdf.cell(20, 6, str(int(row['Edad'])), border=1, align="C")
+        pdf.cell(80, 6, f"${row['Pensión']:,.2f} MXN", border=1, align="C")
+        pdf.ln()
     
     pdf.set_y(255)
-    pdf.line(130, 272, 195, 272)
+    try: pdf.image("assets/firma.png", 145, 252, 38)
+    except: pass
     pdf.set_y(274)
-    pdf.set_text_color(0,0,0)
     pdf.set_font("helvetica", "B", 10)
     pdf.cell(0, 5, "Ing. Roberto Villarreal Glz", ln=True, align="R")
     return bytes(pdf.output())
 
-# --- SIDEBAR (DATOS BASE) ---
+# --- SIDEBAR (DATOS REALES) ---
 with st.sidebar:
-    st.header("📍 Datos Maestros")
+    st.header("⚙️ Configuración Global")
     edad_val = st.number_input("Edad actual", 50, 65, 57)
     sem_val = st.number_input("Semanas cotizadas", 500, 3000, 1315)
-    sal_val = st.number_input("Salario actual (SBC)", 100.0, 3500.0, 959.15)
-    st.divider()
-    inf_val = st.number_input("Inflación %", value=4.5)
-    esp_val = st.checkbox("Asignación Esposa", value=True)
+    sal_val = st.number_input("Salario diario actual (SBC)", 100.0, 3500.0, 959.15)
+    inf_val = st.number_input("Inflación estimada %", value=4.5)
+    esp_val = st.checkbox("Asignación por esposa", value=True)
 
-# --- PESTAÑAS PRINCIPALES ---
+# --- PESTAÑAS ---
 tab1, tab2, tab3 = st.tabs(["📊 Escenario Actual", "🚀 Plan Modalidad 40", "📈 Comparativa & ROI"])
 
-# PESTAÑA 1: SITUACIÓN ACTUAL
+# ---------------------------------------------------------
+# PESTAÑA 1: RECUPERANDO TODO LO LOGRADO
+# ---------------------------------------------------------
 with tab1:
     st.subheader("Análisis de Situación Sin Inversión")
-    p_est, _ = calcular_pension_ley73_local(sal_val, sem_val, edad_val, 60, inf_val, esp_val)
+    
+    # Lógica Real de Pensión
+    p_60, _ = calcular_pension_ley73(sal_val, sem_val, edad_val, 60, inf_val, esp_val)
+    p_100 = p_60 / 0.75 
+    
+    datos_l = []
+    for i in range((65 - edad_val) + 1):
+        ed_i = edad_val + i
+        f_i = (1 + (inf_val/100)) ** i
+        f_ed = 0.75 if ed_i < 60 else FACTORES_EDAD.get(ed_i, 1.0)
+        p_i = (p_100 * f_ed) * f_i
+        datos_l.append({"Año": 2026 + i, "Edad": ed_i, "Pensión": round(p_i, 2)})
+    
+    df_actual = pd.DataFrame(datos_l)
+    val_h = df_actual[df_actual['Edad'] == edad_val]['Pensión'].values[0]
     
     c1, c2 = st.columns([1, 2])
     with c1:
-        st.metric("Pensión Estimada (60 años)", f"${p_est:,.2f}")
-        if st.button("Descargar Diagnóstico Actual"):
-            # Generamos un DF rápido para el PDF
-            df_temp = pd.DataFrame([{"Año": 2026, "Edad": edad_val, "Pensión": p_est}])
-            pdf_b = generar_pdf_pro(df_temp, p_est, p_est, edad_val, 60, sal_val, sem_val, "DIAGNÓSTICO ACTUAL")
-            st.download_button("Click para guardar PDF", pdf_b, "Diagnostico_Actual.pdf")
+        st.metric("Pensión Hoy", f"${val_h:,.2f}")
+        if st.button("Descargar Reporte Actual"):
+            pdf_bytes = generar_pdf_real(df_actual, val_h, val_h, edad_val, edad_val, sal_val, sem_val, "DIAGNÓSTICO ACTUAL")
+            st.download_button("Guardar PDF", pdf_bytes, "Reporte_Actual.pdf")
     
     with c2:
-        st.info("Este cálculo usa tu salario actual de las últimas 250 semanas.")
+        fig = px.bar(df_actual, x="Edad", y="Pensión", text_auto=".0f", template="plotly_dark")
+        st.plotly_chart(fig, use_container_width=True)
 
-# PESTAÑA 2: ESTRATEGIA MODALIDAD 40
+# ---------------------------------------------------------
+# PESTAÑA 2: MOD 40 (AISLADA)
+# ---------------------------------------------------------
 with tab2:
-    st.subheader("Simulación de Inversión (Mod 40)")
-    col_a, col_b = st.columns(2)
-    
-    with col_a:
-        u_mas = st.slider("UMAs a contratar", 1, 25, 25)
-        sbc_m40 = u_mas * 113.89
-        meses_m40 = st.number_input("Meses a pagar", 12, 60, 24)
-    
-    # Lógica de impacto rápida para el test
-    sem_finales = sem_val + int(meses_m40 * 4.33)
-    promedio_proyectado = ((int(meses_m40 * 4.33) * sbc_m40) + ((250 - int(meses_m40 * 4.33)) * sal_val)) / 250
-    p_con_m40, _ = calcular_pension_ley73_local(promedio_proyectado, sem_finales, edad_val, 60, inf_val, esp_val)
-
-    with col_b:
-        st.metric("Nuevo Salario Promedio", f"${promedio_proyectado:,.2f}", f"+{((promedio_proyectado/sal_val)-1)*100:.1f}%")
-        st.metric("Pensión con Estrategia", f"${p_con_m40:,.2f}")
-
-# PESTAÑA 3: COMPARATIVA PRO
-with tab3:
-    st.subheader("Análisis de Retorno de Inversión")
-    st.write("Diferencia mensual ganada:")
-    st.header(f"${(p_con_m40 - p_est):,.2f} MXN / mes")
-    st.progress(0.7, "Nivel de Optimización")
-    st.info("Pestaña en desarrollo para visualización de ROI a 20 años.")
+    st.subheader("Simulador Estratégico Mod 40")
+    # (Aquí va la lógica de inversión que no afecta a la Tab 1)
+    u_mas = st.slider("UMAs", 1, 25, 25)
+    st.info("Configura aquí tu inversión sin alterar el diagnóstico inicial.")
 
 st.divider()
-st.caption(f"Optipensión 73 PRO | {datetime.now().strftime('%Y')}")
+st.caption(f"Optipensión 73 PRO | {datetime.now().year}")
 
 
 # ---------------------------------------------------
