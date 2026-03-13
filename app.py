@@ -2,12 +2,14 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 import plotly.express as px
+import plotly.graph_objects as go
 from fpdf import FPDF 
 import io
 
 # --- IMPORTACIÓN DE TUS ARCHIVOS ---
 from core.calculadora_pension import calcular_pension_ley73
 from config.parametros import FACTORES_EDAD
+from core.mod40 import calcular_mod40
 
 # --- CONFIGURACIÓN DE PÁGINA ---
 st.set_page_config(
@@ -64,19 +66,19 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- FUNCIÓN PDF PROFESIONAL CORREGIDA ---
+# --- FUNCIÓN PDF PROFESIONAL ---
 def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
     
-    # === LOGO MÁS CHICO ===
+    # LOGO
     try:
-        pdf.image("assets/image.jpg", 10, 8, 20)  # Reducido de 30 a 20
+        pdf.image("assets/image.jpg", 10, 8, 20)
     except:
         pass
     
     pdf.set_font("helvetica", "B", 18)
-    pdf.set_xy(40, 12)  # Ajustado por el logo más chico
+    pdf.set_xy(40, 12)
     pdf.cell(0, 10, "OPTIPENSIÓN 73", ln=True)
     pdf.set_font("helvetica", "", 10)
     pdf.set_xy(40, 20)
@@ -87,7 +89,7 @@ def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
     
     pdf.ln(15)
     
-    # === DATOS DEL USUARIO (RECUADRO) ===
+    # DATOS DEL USUARIO
     pdf.set_fill_color(240, 240, 240)
     pdf.set_draw_color(200, 200, 200)
     pdf.rect(10, 45, 190, 25, 'DF')
@@ -107,14 +109,14 @@ def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
     
     pdf.ln(12)
     
-    # === RESULTADOS (DESTACADOS CON DIFERENTES COLORES) ===
+    # RESULTADOS
     pdf.set_font("helvetica", "B", 12)
     pdf.set_text_color(0, 51, 102)
     pdf.cell(0, 8, "RESULTADOS", ln=True, align='C')
     
-    # Recuadro Pensión Hoy (azul)
-    pdf.set_fill_color(230, 240, 255)  # Azul claro
-    pdf.set_draw_color(0, 51, 102)     # Azul oscuro
+    # Recuadro Pensión Hoy
+    pdf.set_fill_color(230, 240, 255)
+    pdf.set_draw_color(0, 51, 102)
     pdf.rect(20, 85, 80, 20, 'DF')
     pdf.set_xy(25, 90)
     pdf.set_font("helvetica", "B", 9)
@@ -125,9 +127,9 @@ def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
     pdf.set_text_color(0, 51, 102)
     pdf.cell(0, 5, f"${p_hoy:,.2f}", ln=True)
     
-    # Recuadro Pensión Proyectada (verde)
-    pdf.set_fill_color(220, 255, 220)  # Verde claro
-    pdf.set_draw_color(0, 102, 0)      # Verde oscuro
+    # Recuadro Pensión Proyectada
+    pdf.set_fill_color(220, 255, 220)
+    pdf.set_draw_color(0, 102, 0)
     pdf.rect(110, 85, 80, 20, 'DF')
     pdf.set_xy(115, 90)
     pdf.set_font("helvetica", "B", 9)
@@ -140,10 +142,9 @@ def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
     
     pdf.ln(30)
     
-    # === TABLA DE PROYECCIÓN (CENTRADA) ===
-    # Calcular posición para centrar la tabla
-    ancho_total = 150  # 45+45+60
-    margen_izquierdo = (210 - ancho_total) / 2  # 210mm es el ancho de A4
+    # TABLA DE PROYECCIÓN
+    ancho_total = 150
+    margen_izquierdo = (210 - ancho_total) / 2
     
     pdf.set_font("helvetica", "B", 10)
     pdf.set_fill_color(200, 200, 200)
@@ -155,13 +156,13 @@ def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
     
     pdf.set_font("helvetica", "", 9)
     for i, row in df.iterrows():
-        if i < 12:  # Máximo 12 filas para que quepa en una hoja
+        if i < 12:
             pdf.set_x(margen_izquierdo)
             pdf.cell(45, 7, str(int(row['Año'])), 1, 0, "C")
             pdf.cell(45, 7, str(int(row['Edad'])), 1, 0, "C")
             pdf.cell(60, 7, f"${row['Pensión']:,.2f}", 1, 1, "C")
     
-    # === NOTA DE DESLINDE LEGAL ===
+    # NOTA LEGAL
     pdf.set_y(205)
     pdf.set_font("helvetica", "I", 8)
     pdf.set_text_color(100, 100, 100)
@@ -172,27 +173,20 @@ def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
     pdf.cell(0, 4, "Los resultados pueden variar según la legislación vigente y condiciones individuales.", ln=True, align='C')
     pdf.cell(0, 4, "Se recomienda validar la información con un asesor certificado.", ln=True, align='C')
     
-    # === FIRMA CON LÍNEA ARRIBA Y CARGO DEBAJO ===
-    pdf.set_y(245)  # Posición vertical para la firma
+    # FIRMA
+    pdf.set_y(245)
+    pdf.line(120, 250, 190, 250)
     
-    # Línea horizontal para la firma
-    pdf.line(120, 250, 190, 250)  # x1, y1, x2, y2
-    
-    # Intentar poner la imagen de la firma sobre la línea
     try:
-        # Posicionar la firma justo encima de la línea
-        pdf.image("assets/firma.png", 140, 235, 40)  # Ajustar según tamaño de la firma
+        pdf.image("assets/firma.png", 140, 235, 40)
     except:
-        # Si no hay imagen, dejar espacio para firma manuscrita
         pass
     
-    # Nombre centrado debajo de la línea
     pdf.set_xy(120, 252)
     pdf.set_font("helvetica", "B", 10)
     pdf.set_text_color(0, 0, 0)
     pdf.cell(70, 5, "Ing. Roberto Villarreal Glz", ln=True, align='C')
     
-    # Cargo debajo del nombre
     pdf.set_xy(120, 257)
     pdf.set_font("helvetica", "", 9)
     pdf.set_text_color(80, 80, 80)
@@ -212,7 +206,7 @@ with st.sidebar:
     inf_val = st.number_input("Inflación Est. %", value=4.5)
     esp_val = st.checkbox("Asignación Esposa", value=True)
 
-# --- CABECERA PRINCIPAL CON LOGO ---
+# --- CABECERA PRINCIPAL ---
 col_logo, col_title = st.columns([1, 5])
 with col_logo:
     try: st.image("assets/image.jpg", width=100)
@@ -221,69 +215,102 @@ with col_title:
     st.title("OPTIPENSIÓN 73")
     st.subheader("Consultoría Especializada en Retiro")
 
+# --- PESTAÑAS ---
 tab1, tab2, tab3 = st.tabs(["📊 Escenario Actual", "🚀 Estrategia Mod 40", "📈 ROI & Comparativa"])
 
-# PESTAÑA 1
+# ============================================
+# PESTAÑA 1: ESCENARIO ACTUAL
+# ============================================
 with tab1:
+    st.markdown("### 📊 Escenario Actual")
+    
+    # SELECTOR DE EDAD DE RETIRO
+    edad_retiro = st.select_slider(
+        "🎯 Edad de retiro deseada",
+        options=[60, 61, 62, 63, 64, 65],
+        value=60,
+        help="Selecciona la edad a la que planeas retirarte"
+    )
+    # Guardar en session_state para otras pestañas
+    st.session_state.edad_retiro = edad_retiro
+    
+    # Mostrar factor de edad
+    factor_edad = FACTORES_EDAD.get(edad_retiro, 0.75)
+    st.caption(f"Factor por edad aplicado: {factor_edad*100:.0f}%")
+    
+    # Calcular pensión base
     p_60, _ = calcular_pension_ley73(sal_val, sem_val, edad_val, 60, inf_val, esp_val)
     p_100 = p_60 / 0.75
     
+    # Generar tabla
     datos = []
-    for i in range((65 - edad_val) + 1):
+    for i in range((edad_retiro - edad_val) + 1):
         ed_i = edad_val + i
-        f_i = (1 + (inf_val/100)) ** i
-        f_ed = 0.75 if ed_i < 60 else FACTORES_EDAD.get(ed_i, 1.0)
-        p_i = (p_100 * f_ed) * f_i
-        datos.append({"Año": 2026 + i, "Edad": ed_i, "Pensión": round(p_i, 2)})
+        años_desde_hoy = i
+        factor_ed = FACTORES_EDAD.get(ed_i, 1.0)
+        f_inf = (1 + (inf_val/100)) ** años_desde_hoy
+        p_i = (p_100 * factor_ed) * f_inf
+        datos.append({
+            "Año": 2026 + años_desde_hoy,
+            "Edad": ed_i,
+            "Pensión": round(p_i, 2),
+            "Factor": f"{factor_ed*100:.0f}%"
+        })
     
     df_actual = pd.DataFrame(datos)
     
-    st.markdown("### ¿A qué edad planea retirarse?")
-    edad_obj = st.select_slider("Seleccione la edad de retiro para comparar", options=list(range(60, 66)), value=60)
-    
+    # Mostrar resultados
     p_hoy = df_actual[df_actual['Edad'] == edad_val]['Pensión'].values[0]
-    p_proyectada = df_actual[df_actual['Edad'] == edad_obj]['Pensión'].values[0]
+    p_futura = df_actual[df_actual['Edad'] == edad_retiro]['Pensión'].values[0]
     
-    c1, c2 = st.columns([1, 2])
-    with c1:
-        # Recuadro Pensión Hoy
+    col1, col2 = st.columns(2)
+    
+    with col1:
         st.markdown(f"""
-            <div class="metric-container">
-                <div class="metric-label">Pensión Estimada Hoy</div>
-                <div class="metric-value">${p_hoy:,.2f}</div>
-            </div>
+        <div class="metric-container">
+            <div class="metric-label">Pensión Estimada Hoy</div>
+            <div class="metric-value">${p_hoy:,.2f}</div>
+        </div>
         """, unsafe_allow_html=True)
-
-        # Recuadro Pensión Proyectada
+    
+    with col2:
         st.markdown(f"""
-            <div class="metric-container-pro">
-                <div class="metric-label">Pensión a los {edad_obj} años</div>
-                <div class="metric-value">${p_proyectada:,.2f}</div>
-            </div>
+        <div class="metric-container-pro">
+            <div class="metric-label">Pensión a los {edad_retiro} años</div>
+            <div class="metric-value">${p_futura:,.2f}</div>
+        </div>
         """, unsafe_allow_html=True)
-        
-        if st.button("📥 Descargar Reporte PDF"):
-            pdf_out = generar_pdf_pro(df_actual, p_hoy, p_proyectada, edad_val, edad_obj, sal_val, sem_val)
-            st.download_button("Click para Guardar", pdf_out, "Reporte_Optipension.pdf")
-
-    with c2:
-        fig = px.bar(df_actual, x="Edad", y="Pensión", color="Pensión", color_continuous_scale="Blues", text_auto=".2s")
-        st.plotly_chart(fig, use_container_width=True)
-
+    
+    # Botón PDF
+    if st.button("📥 Descargar Reporte PDF", use_container_width=True):
+        pdf_out = generar_pdf_pro(df_actual, p_hoy, p_futura, edad_val, edad_retiro, sal_val, sem_val)
+        st.download_button("Click para Guardar", pdf_out, "Reporte_Optipension.pdf")
+    
+    # Tabla de proyección
+    with st.expander("📈 Ver proyección año por año"):
+        st.dataframe(
+            df_actual[['Año', 'Edad', 'Factor', 'Pensión']].style.format({
+                'Pensión': '${:,.2f}'
+            }),
+            use_container_width=True,
+            hide_index=True
+        )
 
 # ============================================
-# PESTAÑA 2: MODALIDAD 40 (CON EDAD DE RETIRO DE PESTAÑA 1)
+# PESTAÑA 2: MODALIDAD 40
 # ============================================
 with tab2:
     st.markdown("### 🚀 Estrategia de Modalidad 40")
     
-    # Mostrar la edad de retiro seleccionada en pestaña 1
+    # Recuperar edad de retiro de pestaña 1
+    edad_retiro = st.session_state.get('edad_retiro', 60)
+    
     st.info(f"""
     🎯 **Edad de retiro seleccionada: {edad_retiro} años**  
     *(puedes cambiarla en la pestaña "Escenario Actual")*
     """)
     
-    # Datos actuales del sidebar (referencia)
+    # Datos actuales
     col_ref1, col_ref2, col_ref3 = st.columns(3)
     with col_ref1:
         st.metric("Edad actual", f"{edad_val} años")
@@ -294,7 +321,7 @@ with tab2:
     
     st.markdown("---")
     
-    # Parámetros específicos para M40
+    # Parámetros M40
     col1, col2 = st.columns(2)
     
     with col1:
@@ -320,19 +347,16 @@ with tab2:
     # Botón de cálculo
     if st.button("📈 Calcular impacto M40", use_container_width=True, type="primary"):
         
-        # Usar datos del sidebar + edad_retiro de pestaña 1
-        from core.mod40 import calcular_mod40
         resultado_m40 = calcular_mod40(
-            edad_val,           # edad actual
-            sem_val,            # semanas
-            sal_val,            # salario actual
-            sal_m40_tope,       # salario M40
-            meses_m40,          # meses en M40
-            edad_retiro,        # <--- EDAD DE RETIRO DE PESTAÑA 1
-            esp_val             # asignación esposa
+            edad_val,
+            sem_val,
+            sal_val,
+            sal_m40_tope,
+            meses_m40,
+            edad_retiro,
+            esp_val
         )
         
-        # Mostrar resultados (igual que antes)
         st.markdown("---")
         st.markdown("### 📊 Resultado de la Estrategia")
         
@@ -374,9 +398,7 @@ with tab2:
         with col_d3:
             st.metric("ROI a 20 años", f"{resultado_m40['roi']}%")
         
-        # Gráfica comparativa
-        import plotly.graph_objects as go
-        
+        # Gráfica
         fig = go.Figure(data=[
             go.Bar(name='Pensión Base', x=['Actual'], y=[resultado_m40['base']], 
                    marker_color='#3b82f6', text=[f"${resultado_m40['base']:,.0f}"],
@@ -399,21 +421,16 @@ with tab2:
         
         st.success(f"""
         ### 💰 Utilidad estimada a 20 años: **${resultado_m40['utilidad_20']:,.2f} MXN**
-        
-        *Considerando el incremento mensual durante 20 años menos la inversión inicial.*
-        """)    
+        """)
 
-# PESTAÑAS VACÍAS
+# ============================================
+# PESTAÑA 3: EN PREPARACIÓN
+# ============================================
 with tab3:
     st.info("Pestaña de ROI y Comparativas en preparación.")
 
-st.caption(f"Ing. Roberto Villarreal Glz. | 2026")                 
-
-# ---------------------------------------------------
-# FOOTER PRO (ESTILO IMÁGENES)
-# ---------------------------------------------------
+# --- FOOTER ---
 st.divider()
-
 st.markdown(
 """
 <div style='text-align:left;'>
@@ -421,15 +438,15 @@ st.markdown(
 ### 📌 TÉRMINOS Y CONDICIONES
 El uso de este simulador implica la aceptación de los siguientes términos:
 * **Naturaleza del servicio**: Este simulador proporciona estimaciones basadas en modelos matemáticos y la Ley 73 del IMSS. Los resultados son aproximados y no constituyen un dictamen oficial ni una garantía de pago.
-* **Limitación de responsabilidad**: Optipensión 73 no se hace responsable por decisiones tomadas basadas exclusivamente en los resultados de esta demo. Se recomienda consultar con un asesor certificado.
+* **Limitación de responsabilidad**: Optipensión 73 no se hace responsable por decisiones tomadas basadas exclusivamente en los resultados. Se recomienda consultar con un asesor certificado.
 * **Uso personal**: Esta herramienta es para uso informativo personal.
 
 ---
 
 ### 🔒 AVISO DE PRIVACIDAD
-**Protección de datos**: Esta aplicación DEMO **NO almacena, guarda ni comparte** ningún dato personal ingresado por el usuario. Todos los cálculos se realizan en tiempo real y los datos se descartan al cerrar la sesión.
+**Protección de datos**: Esta aplicación NO almacena, guarda ni comparte ningún dato personal ingresado por el usuario.
 
-**Cookies**: No utilizamos cookies de rastreo ni almacenamos información de navegación.
+**Cookies**: No utilizamos cookies de rastreo.
 
 ---
 
@@ -441,7 +458,6 @@ El uso de este simulador implica la aceptación de los siguientes términos:
 📍 **Oficina**: Torreón, Coahuila · México
 
 <br>
-
 <div style='text-align:center;'>
 **© 2026 Optipensión 73 · Versión PRO**
 </div>
