@@ -3,171 +3,75 @@ import pandas as pd
 from datetime import datetime
 import plotly.express as px
 
-# Importación de tu motor de cálculo profesional
+# Importamos la lógica y los parámetros
 from core.calculadora_pension import calcular_pension_ley73
+from config.parametros import FACTORES_EDAD
 
-# ---------------------------------------------------
-# CONFIGURACION DE LA PÁGINA
-# ---------------------------------------------------
-st.set_page_config(
-    page_title="Optipensión 73",
-    layout="centered",
-    page_icon="💰"
-)
+st.set_page_config(page_title="Optipensión 73", layout="centered", page_icon="💰")
 
-# ---------------------------------------------------
-# HEADER (LOGOTIPO Y TÍTULO)
-# ---------------------------------------------------
+# --- HEADER ---
 col_logo, col_title = st.columns([1,4])
-
 with col_logo:
-    # Se utiliza la ruta assets/image.jpg como en tu repositorio
     st.image("assets/image.jpg", width=90)
-
 with col_title:
     st.title("Optipensión 73")
     st.caption("Simulador Estratégico de Pensión IMSS Ley 73")
 
 st.divider()
 
-# ---------------------------------------------------
-# FORMULARIO DE ENTRADA
-# ---------------------------------------------------
+# --- FORMULARIO ---
 st.subheader("Datos del trabajador")
+c1, c2 = st.columns(2)
 
-col1, col2 = st.columns(2)
+with c1:
+    edad_actual = st.number_input("Edad actual", min_value=50, max_value=65, value=57)
+    semanas = st.number_input("Semanas cotizadas", min_value=500, max_value=3000, value=1315)
 
-with col1:
-    edad_actual = st.number_input(
-        "Edad actual",
-        min_value=40,
-        max_value=65,
-        value=57
-    )
-    semanas = st.number_input(
-        "Semanas cotizadas",
-        min_value=500,
-        max_value=3000,
-        value=1315
-    )
+with c2:
+    salario = st.number_input("Salario diario (SDI)", min_value=100.0, value=960.0)
+    edad_retiro = st.selectbox("Edad de retiro deseada", [60,61,62,63,64,65], index=0)
 
-with col2:
-    salario = st.number_input(
-        "Salario promedio diario (SDI)",
-        min_value=100.0,
-        max_value=5000.0,
-        value=959.15
-    )
-    edad_retiro = st.selectbox(
-        "Edad de retiro",
-        [60, 61, 62, 63, 64, 65],
-        index=0
-    )
-
-inflacion = st.number_input(
-    "Inflación anual estimada (%)",
-    min_value=0.0,
-    max_value=15.0,
-    value=4.5
-)
-
+inflacion = st.number_input("Inflación anual estimada (%)", value=4.5)
 esposa = st.checkbox("Asignación por esposa (15%)", value=True)
 
-# ---------------------------------------------------
-# LÓGICA DE CÁLCULO Y RESULTADOS
-# ---------------------------------------------------
+# --- EJECUCIÓN ---
 if st.button("Recalcular simulación"):
-    
-    # Llamada a tu motor respetando el orden de argumentos de calculadora_pension.py
-    # Orden: salario_diario, semanas, edad_actual, edad_retiro, inflacion, esposa
+    # Llamada al motor profesional
     pension_hoy, pension_futura = calcular_pension_ley73(
-        salario,
-        semanas,
-        edad_actual,
-        edad_retiro,
-        inflacion,
-        esposa
+        salario, semanas, edad_actual, edad_retiro, inflacion, esposa
     )
 
-    # Despliegue de resultados con formato de moneda profesional
-    st.success(f"### 💰 Pensión estimada actual: ${pension_hoy:,.2f} MXN")
-    st.info(f"### 📈 Pensión proyectada al retiro: ${pension_futura:,.2f} MXN")
+    st.success(f"### 💰 Pensión estimada actual (a los {edad_retiro} años): ${pension_hoy:,.2f} MXN")
+    st.info(f"### 📈 Pensión proyectada al retiro (con inflación): ${pension_futura:,.2f} MXN")
 
-    # ---------------------------------------------------
-    # PROYECCION PARA GRÁFICA (EFECTO INFLACIONARIO)
-    # ---------------------------------------------------
+    # --- PROYECCIÓN ANUAL PARA GRÁFICA ---
+    # Solo proyectamos el efecto del tiempo e inflación sobre la base calculada
     ano_actual = datetime.now().year
-    datos_proyeccion = []
-
+    datos = []
+    
     for i in range((edad_retiro - edad_actual) + 1):
-        anio = ano_actual + i
         edad_iter = edad_actual + i
+        anio_iter = ano_actual + i
+        # Crecimiento compuesto por inflación
+        pension_iter = pension_hoy * ((1 + (inflacion/100)) ** i)
         
-        # Proyección basada en la inflación acumulada sobre la pensión ya calculada
-        pension_proyectada = pension_hoy * ((1 + (inflacion/100)) ** i)
-        
-        datos_proyeccion.append({
-            "Año": anio,
+        datos.append({
             "Edad": edad_iter,
-            "Pensión mensual": round(pension_proyectada, 2)
+            "Año": anio_iter,
+            "Pensión mensual": round(pension_iter, 2)
         })
 
-    df = pd.DataFrame(datos_proyeccion)
+    df = pd.DataFrame(datos)
 
-    # ---------------------------------------------------
-    # VISUALIZACIÓN (GRÁFICA Y TABLA)
-    # ---------------------------------------------------
+    # --- VISUALIZACIÓN ---
     st.subheader("📊 Proyección de crecimiento de la pensión")
-    fig = px.line(
-        df, 
-        x="Año", 
-        y="Pensión mensual",
-        markers=True,
-        text="Pensión mensual",
-        template="plotly_dark"
-    )
-    fig.update_traces(textposition="top center", line_color="#1E88E5")
-    fig.update_layout(yaxis_tickformat="$,.0f")
+    fig = px.bar(df, x="Edad", y="Pensión mensual", text_auto=".0f", template="plotly_dark")
+    fig.update_traces(marker_color='#1E88E5')
     st.plotly_chart(fig, use_container_width=True)
 
     st.subheader("📋 Tabla de proyección anual")
-    st.dataframe(
-        df.style.format({"Pensión mensual": "${:,.2f}", "Año": "{:.0f}"}),
-        use_container_width=True
-    )
+    st.dataframe(df.style.format({"Pensión mensual": "${:,.2f}"}), use_container_width=True)
 
-# ---------------------------------------------------
-# FOOTER (LEGAL Y CONTACTO)
-# ---------------------------------------------------
+# --- FOOTER LEGAL ---
 st.divider()
-
-st.markdown(
-"""
-<div style='text-align:center;'>
-
-### 📌 TÉRMINOS Y CONDICIONES
-Este simulador proporciona estimaciones basadas en modelos matemáticos y la Ley 73 del IMSS.  
-Los resultados son aproximados y no constituyen un dictamen oficial.
-
----
-
-### 🔒 AVISO DE PRIVACIDAD
-Esta aplicación DEMO no almacena datos personales ingresados por el usuario.  
-Los cálculos se realizan en tiempo real.
-
----
-
-### ⚖️ LEGAL
-Propiedad intelectual © 2026  
-**Ing. Roberto Villarreal Glz** 📧 contacto@optipension73.com  
-📱 WhatsApp: 871 579 1810  
-📍 Torreón, Coahuila · México
-
-<br>
-
-**© 2026 Optipensión 73 · Versión PRO**
-
-</div>
-""",
-unsafe_allow_html=True
-)
+st.markdown("<div style='text-align:center;'>© 2026 Optipensión 73 · Versión PRO</div>", unsafe_allow_html=True)

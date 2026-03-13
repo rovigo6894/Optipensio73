@@ -1,16 +1,9 @@
-# ============================================
-# PARÁMETROS DEL SISTEMA IMSS LEY 73
-# ============================================
+# config/parametros.py
 
-# Parámetros generales del sistema
+# Valor de la UMA 2026 (Se actualiza cada febrero)
+UMA = 117.31 
 
-# UMA actual
-UMA_ACTUAL = 108.57
-
-# crecimiento anual estimado de UMA
-CRECIMIENTO_UMA = 0.04
-
-# Factores de reducción por edad (Ley 73)
+# Porcentajes de pensión según la edad de retiro (Ley 73)
 FACTORES_EDAD = {
     60: 0.75,
     61: 0.80,
@@ -19,3 +12,9 @@ FACTORES_EDAD = {
     64: 0.95,
     65: 1.00
 }
+
+# Factor de incremento por el Decreto Fox (1.11)
+FACTOR_FOX = 1.11
+
+# Asignación familiar por esposa
+ASIGNACION_ESPOSA = 0.15

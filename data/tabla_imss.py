@@ -1,52 +1,55 @@
-import pandas as pd
-
-# Tabla oficial simplificada de cuantías Ley 73
-# columnas:
-# limite_inferior, limite_superior, cuantia_basica, incremento_anual
-
-tabla_imss = pd.DataFrame([
-    [0.00, 1.00, 80.00, 0.563],
-    [1.01, 1.25, 77.11, 0.814],
-    [1.26, 1.50, 58.18, 1.178],
-    [1.51, 1.75, 49.19, 1.430],
-    [1.76, 2.00, 42.67, 1.615],
-    [2.01, 2.25, 37.65, 1.756],
-    [2.26, 2.50, 33.68, 1.866],
-    [2.51, 2.75, 30.48, 1.955],
-    [2.76, 3.00, 27.83, 2.031],
-    [3.01, 3.25, 25.60, 2.095],
-    [3.26, 3.50, 23.70, 2.151],
-    [3.51, 3.75, 22.07, 2.200],
-    [3.76, 4.00, 20.65, 2.243],
-    [4.01, 4.25, 19.39, 2.281],
-    [4.26, 4.50, 18.27, 2.315],
-    [4.51, 4.75, 17.27, 2.345],
-    [4.76, 5.00, 16.37, 2.372],
-    [5.01, 5.25, 15.55, 2.396],
-    [5.26, 5.50, 14.80, 2.418],
-    [5.51, 5.75, 14.12, 2.438],
-    [5.76, 6.00, 13.49, 2.457],
-    [6.01, 999, 13.00, 2.450]  # tu rango actual
-],
-columns=[
-    "limite_inferior",
-    "limite_superior",
-    "cuantia_basica",
-    "incremento_anual"
-])
-
+# data/tabla_imss.py
 
 def buscar_porcentaje(veces_uma):
-
-    fila = tabla_imss[
-        (tabla_imss.limite_inferior <= veces_uma) &
-        (tabla_imss.limite_superior >= veces_uma)
-    ]
-
-    if fila.empty:
-        raise ValueError("Salario fuera de rango")
-
-    cuantia = fila.iloc[0]["cuantia_basica"] / 100
-    incremento = fila.iloc[0]["incremento_anual"] / 100
-
-    return cuantia, incremento
+    """
+    Determina los porcentajes de cuantía básica e incremento anual 
+    según el grupo de salario expresado en veces la UMA.
+    Basado en el Art. 167 de la Ley del Seguro Social de 1973.
+    """
+    
+    # Tabla oficial de cuantías e incrementos
+    if veces_uma <= 1.0:
+        return 0.80, 0.00563
+    elif veces_uma <= 1.25:
+        return 0.7711, 0.00814
+    elif veces_uma <= 1.50:
+        return 0.5818, 0.01178
+    elif veces_uma <= 1.75:
+        return 0.4923, 0.01430
+    elif veces_uma <= 2.0:
+        return 0.4267, 0.01615
+    elif veces_uma <= 2.25:
+        return 0.3765, 0.01756
+    elif veces_uma <= 2.50:
+        return 0.3368, 0.01868
+    elif veces_uma <= 2.75:
+        return 0.3048, 0.01958
+    elif veces_uma <= 3.0:
+        return 0.2783, 0.02033
+    elif veces_uma <= 3.25:
+        return 0.2560, 0.02096
+    elif veces_uma <= 3.50:
+        return 0.2370, 0.02149
+    elif veces_uma <= 3.75:
+        return 0.2207, 0.02195
+    elif veces_uma <= 4.0:
+        return 0.2065, 0.02235
+    elif veces_uma <= 4.25:
+        return 0.1939, 0.02271
+    elif veces_uma <= 4.50:
+        return 0.1829, 0.02302
+    elif veces_uma <= 4.75:
+        return 0.1730, 0.02330
+    elif veces_uma <= 5.0:
+        return 0.1641, 0.02355
+    elif veces_uma <= 5.25:
+        return 0.1561, 0.02377
+    elif veces_uma <= 5.50:
+        return 0.1488, 0.02398
+    elif veces_uma <= 5.75:
+        return 0.1422, 0.02416
+    elif veces_uma <= 6.0:
+        return 0.1362, 0.02434
+    else:
+        # Para salarios mayores a 6.01 veces la UMA
+        return 0.13, 0.0245
