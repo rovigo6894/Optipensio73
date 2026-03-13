@@ -314,7 +314,7 @@ with tab2:
         
         # Aquí debes llamar a tu función de cálculo real
         # Por ahora, simulo valores para que se vea la estructura
-        from mod40 import calcular_mod40
+        from core.mod40 import calcular_mod40
         resultado_m40 = calcular_mod40(
             edad_m40, sem_m40, sal_m40, 
             sal_m40_tope, meses_m40, esp_m40
