@@ -15,7 +15,6 @@ st.set_page_config(
     layout="centered"
 )
 
-
 # ---------------------------------------------------
 # HEADER
 # ---------------------------------------------------
@@ -30,7 +29,6 @@ with col_title:
     st.caption("Simulador Estratégico de Pensión IMSS Ley 73")
 
 st.divider()
-
 
 # ---------------------------------------------------
 # FORMULARIO
@@ -77,6 +75,18 @@ inflacion = st.number_input(
 
 esposa = st.checkbox("Asignación por esposa (15%)")
 
+# ---------------------------------------------------
+# TABLA PORCENTAJES LEY 73
+# ---------------------------------------------------
+
+tabla_porcentaje = {
+    60: 0.75,
+    61: 0.80,
+    62: 0.85,
+    63: 0.90,
+    64: 0.95,
+    65: 1.00
+}
 
 # ---------------------------------------------------
 # CALCULO
@@ -93,12 +103,9 @@ if st.button("Recalcular simulación"):
         esposa
     )
 
-    # RESULTADO PRINCIPAL
     st.success(f"### 💰 Pensión estimada actual: ${pension_hoy:,.0f} MXN")
 
-    # RESULTADO PROYECTADO
     st.info(f"### 📈 Pensión proyectada al retiro: ${pension_futura:,.0f} MXN")
-
 
     # ---------------------------------------------------
     # PROYECCION
@@ -108,24 +115,34 @@ if st.button("Recalcular simulación"):
     anos = edad_retiro - edad_actual
     ano_actual = datetime.now().year
 
-    pension = pension_hoy
     datos = []
+
+    # calcular cuantia base
+    porcentaje_actual = tabla_porcentaje.get(edad_retiro, 0.75)
+    cuantia_base = pension_futura / porcentaje_actual
 
     for i in range(anos + 1):
 
+        edad = edad_actual + i
+        anio = ano_actual + i
+
+        porcentaje = tabla_porcentaje.get(edad, porcentaje_actual)
+
+        pension = cuantia_base * porcentaje
+
+        pension = pension * ((1 + inflacion_decimal) ** i)
+
         datos.append({
-            "Edad": edad_actual + i,
-            "Año": ano_actual + i,
+            "Edad": edad,
+            "Año": anio,
+            "% Edad": int(porcentaje*100),
             "Pensión mensual": pension
         })
 
-        pension = pension * (1 + inflacion_decimal)
-
     df = pd.DataFrame(datos)
 
-
     # ---------------------------------------------------
-    # GRAFICA DE BARRAS
+    # GRAFICA BARRAS
     # ---------------------------------------------------
 
     st.subheader("📊 Proyección de crecimiento de la pensión")
@@ -144,7 +161,6 @@ if st.button("Recalcular simulación"):
     )
 
     st.plotly_chart(fig, use_container_width=True)
-
 
     # ---------------------------------------------------
     # TABLA
@@ -195,7 +211,7 @@ Ing. Roberto Villarreal Glz
 
 <br>
 
-© 2026 Optipensión 73 · Versión DEMO
+© 2026 Optipensión 73 · Versión PRO
 
 </div>
 """,
