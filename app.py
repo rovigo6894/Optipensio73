@@ -1,42 +1,47 @@
+
 import streamlit as st
 import pandas as pd
-import matplotlib.pyplot as plt
 from datetime import datetime
+import plotly.express as px
 
 from core.calculadora_pension import calcular_pension_ley73
 
+
+# ---------------------------------------------------
+# CONFIGURACION
+# ---------------------------------------------------
+
 st.set_page_config(
-    page_title="Simulador Pensión IMSS Ley 73",
+    page_title="Optipensión 73",
     layout="centered"
 )
 
-st.title("Simulador de Pensión IMSS Ley 73")
 
-tabs = st.tabs(["Simulación pensión", "Modalidad 40"])
+# ---------------------------------------------------
+# HEADER
+# ---------------------------------------------------
 
-# =====================================
-# TAB 1 SIMULACION PENSION
-# =====================================
+col_logo, col_title = st.columns([1,4])
 
-with tabs[0]:
+with col_logo:
+    st.image("assets/image.jpg", width=90)
 
-    st.subheader("Datos del trabajador")
+with col_title:
+    st.title("Optipensión 73")
+    st.caption("Simulador Estratégico de Pensión IMSS Ley 73")
 
-    salario = st.number_input(
-        "Salario diario promedio",
-        min_value=100.0,
-        max_value=5000.0,
-        value=959.15,
-        step=1.0
-    )
+st.divider()
 
-    semanas = st.number_input(
-        "Semanas cotizadas",
-        min_value=500,
-        max_value=3000,
-        value=1315
-    )
 
+# ---------------------------------------------------
+# FORMULARIO
+# ---------------------------------------------------
+
+st.subheader("📋 Datos del trabajador")
+
+col1, col2 = st.columns(2)
+
+with col1:
     edad_actual = st.number_input(
         "Edad actual",
         min_value=50,
@@ -44,110 +49,159 @@ with tabs[0]:
         value=57
     )
 
-    edad_retiro = st.selectbox(
-        "Edad de retiro",
-        [60,61,62,63,64,65]
+with col2:
+    salario = st.number_input(
+        "Salario diario (SDI)",
+        min_value=100.0,
+        max_value=5000.0,
+        value=960.0
     )
 
-    inflacion = st.number_input(
-        "Inflación anual estimada (%)",
-        min_value=0.0,
-        max_value=15.0,
-        value=4.5,
-        step=0.1
+semanas = st.number_input(
+    "Semanas cotizadas",
+    min_value=500,
+    max_value=3000,
+    value=1315
+)
+
+edad_retiro = st.selectbox(
+    "Edad de retiro",
+    [60,61,62,63,64,65]
+)
+
+inflacion = st.number_input(
+    "Inflación anual estimada (%)",
+    min_value=0.0,
+    max_value=15.0,
+    value=4.5
+)
+
+esposa = st.checkbox("Asignación por esposa (15%)")
+
+st.caption("⚡ Valores de referencia: 1315 semanas · retiro a los 60 años")
+
+
+# ---------------------------------------------------
+# BOTON CALCULO
+# ---------------------------------------------------
+
+if st.button("🔄 Recalcular simulación"):
+
+    pension_hoy, pension_futura = calcular_pension_ley73(
+        salario,
+        semanas,
+        edad_actual,
+        edad_retiro,
+        inflacion,
+        esposa
     )
 
-    esposa = st.checkbox("Asignación esposa (15%)")
+    st.success(f"### 💰 Pensión estimada actual: ${pension_hoy:,.0f} MXN")
 
-    st.divider()
+    # ---------------------------------------------------
+    # PROYECCION
+    # ---------------------------------------------------
 
-    if st.button("Calcular pensión"):
+    inflacion_decimal = inflacion / 100
+    anos = edad_retiro - edad_actual
+    ano_actual = datetime.now().year
 
-        pension_hoy, pension_futura = calcular_pension_ley73(
-            salario,
-            semanas,
-            edad_actual,
-            edad_retiro,
-            inflacion,
-            esposa
-        )
+    pension = pension_hoy
+    datos = []
 
-        st.subheader("Resultados")
+    for i in range(anos + 1):
 
-        st.success(f"Pensión estimada hoy: ${pension_hoy:,.2f}")
+        datos.append({
+            "Año": ano_actual + i,
+            "Pensión mensual": pension
+        })
 
-        st.success(
-            f"Pensión proyectada a los {edad_retiro} años: ${pension_futura:,.2f}"
-        )
+        pension = pension * (1 + inflacion_decimal)
 
-        # =========================
-        # TABLA PROYECCION
-        # =========================
+    df = pd.DataFrame(datos)
 
-        inflacion_decimal = inflacion / 100
+    # ---------------------------------------------------
+    # GRAFICA INTERACTIVA
+    # ---------------------------------------------------
 
-        anos = edad_retiro - edad_actual
+    st.subheader("📈 Proyección de crecimiento de la pensión")
 
-        ano_actual = datetime.now().year
-
-        datos = []
-
-        pension = pension_hoy
-
-        for i in range(anos + 1):
-
-            datos.append({
-                "Año": ano_actual + i,
-                "Pensión mensual": round(pension,2)
-            })
-
-            pension = pension * (1 + inflacion_decimal)
-
-        df = pd.DataFrame(datos)
-
-        st.subheader("Proyección anual de la pensión")
-
-        st.dataframe(df)
-
-        # =========================
-        # GRAFICA
-        # =========================
-
-        st.subheader("Crecimiento estimado de la pensión")
-
-        fig, ax = plt.subplots()
-
-        ax.plot(df["Año"], df["Pensión mensual"], marker="o")
-
-        ax.set_xlabel("Año")
-
-        ax.set_ylabel("Pensión mensual")
-
-        ax.set_title("Proyección de pensión con inflación")
-
-        ax.grid(True)
-
-        st.pyplot(fig)
-
-
-# =====================================
-# TAB 2 MODALIDAD 40
-# =====================================
-
-with tabs[1]:
-
-    st.subheader("Simulación Modalidad 40")
-
-    st.write(
-        """
-        En esta sección se analizará el impacto de cotizar en 
-        Modalidad 40 sobre la pensión final.
-
-        Próximamente se agregará:
-        
-        • simulación de salario Modalidad 40  
-        • costo total de inversión  
-        • incremento de pensión  
-        • retorno de inversión (ROI)
-        """
+    fig = px.line(
+        df,
+        x="Año",
+        y="Pensión mensual",
+        markers=True
     )
+
+    fig.update_layout(
+        template="plotly_dark",
+        xaxis_title="Año",
+        yaxis_title="Pensión mensual MXN"
+    )
+
+    st.plotly_chart(fig, use_container_width=True)
+
+    # ---------------------------------------------------
+    # TABLA
+    # ---------------------------------------------------
+
+    st.subheader("📊 Tabla de proyección anual")
+
+    df["Pensión mensual"] = df["Pensión mensual"].map(lambda x: f"${x:,.2f}")
+
+    st.dataframe(
+        df,
+        use_container_width=True
+    )
+
+
+# ---------------------------------------------------
+# FOOTER PROFESIONAL
+# ---------------------------------------------------
+
+st.divider()
+
+col1, col2 = st.columns([1,4])
+
+with col1:
+    st.image("assets/image.jpg", width=80)
+
+with col2:
+
+    st.markdown("""
+### 📌 TÉRMINOS Y CONDICIONES
+
+El uso de este simulador implica la aceptación de los siguientes términos:
+
+**Naturaleza del servicio**  
+Este simulador proporciona estimaciones basadas en modelos matemáticos y la Ley 73 del IMSS.  
+Los resultados son aproximados y no constituyen un dictamen oficial ni una garantía de pago.
+
+**Limitación de responsabilidad**  
+Optipensión 73 no se hace responsable por decisiones tomadas basadas exclusivamente en esta simulación.
+
+**Uso personal**  
+Esta herramienta es únicamente para fines informativos.
+
+---
+
+### 🔒 AVISO DE PRIVACIDAD
+
+Esta aplicación DEMO **no almacena datos personales** ingresados por el usuario.  
+Los cálculos se realizan en tiempo real.
+
+No utilizamos cookies ni rastreo de navegación.
+
+---
+
+### ⚖️ LEGAL
+
+Propiedad intelectual © 2026  
+**Ing. Roberto Villarreal Glz**
+
+📧 contacto@optipension73.com  
+📱 WhatsApp: 871 579 1810  
+📍 Torreón, Coahuila · México
+""")
+
+st.caption("© 2026 Optipensión 73 · Versión DEMO")
