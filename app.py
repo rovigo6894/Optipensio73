@@ -64,59 +64,105 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- FUNCIÓN PDF ---
+# --- FUNCIÓN PDF PROFESIONAL CORREGIDA ---
 def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
     
-    try: pdf.image("assets/image.jpg", 10, 10, 30)
-    except: pass
+    # === ENCABEZADO PROFESIONAL ===
+    try:
+        pdf.image("assets/image.jpg", 10, 8, 30)
+    except:
+        pass
     
-    pdf.set_font("helvetica", "B", 16)
-    pdf.set_xy(50, 15)
-    pdf.cell(0, 10, "REPORTE ESTRATÉGICO DE PENSIÓN", ln=True, align="R")
+    pdf.set_font("helvetica", "B", 18)
+    pdf.set_xy(45, 12)
+    pdf.cell(0, 10, "OPTIPENSIÓN 73", ln=True)
     pdf.set_font("helvetica", "", 10)
-    pdf.cell(0, 5, f"Generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True, align="R")
-
-    pdf.set_y(55)
-    pdf.set_fill_color(235, 235, 235)
-    pdf.set_font("helvetica", "B", 12)
-    pdf.cell(0, 8, " 1. Diagnóstico de Situación Actual", ln=True, fill=True)
-    pdf.set_font("helvetica", "", 11)
-    pdf.ln(3)
-    pdf.cell(0, 6, f"      - Edad actual: {edad_act} años", ln=True)
-    pdf.cell(0, 6, f"      - Semanas reconocidas: {sem}", ln=True)
-    pdf.cell(0, 6, f"      - Salario Diario (SBC): ${sal:,.2f} MXN", ln=True)
-
-    pdf.ln(5)
-    pdf.set_font("helvetica", "B", 12)
-    pdf.cell(0, 8, " 2. Resultados Proyectados", ln=True, fill=True)
-    pdf.ln(4)
-    pdf.set_font("helvetica", "B", 13)
-    pdf.set_text_color(0, 51, 102)
-    pdf.cell(0, 7, f"      PENSIÓN ESTIMADA HOY: ${p_hoy:,.2f} MXN", ln=True)
-    pdf.cell(0, 7, f"      PENSIÓN A LOS {edad_obj} AÑOS: ${p_proyectada:,.2f} MXN", ln=True)
+    pdf.set_xy(45, 20)
+    pdf.cell(0, 5, "Consultoría Especializada en Retiro", ln=True)
+    pdf.set_font("helvetica", "", 8)
+    pdf.set_xy(45, 25)
+    pdf.cell(0, 5, f"Reporte generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True)
     
-    pdf.ln(8)
-    pdf.set_text_color(0, 0, 0)
+    pdf.ln(15)
+    
+    # === DATOS DEL USUARIO (RECUADRO) ===
+    pdf.set_fill_color(240, 240, 240)
+    pdf.set_draw_color(200, 200, 200)
+    pdf.rect(10, 45, 190, 25, 'DF')
+    
     pdf.set_font("helvetica", "B", 10)
-    pdf.set_fill_color(210, 210, 210)
-    pdf.cell(40, 8, "Año", 1, 0, "C", True)
-    pdf.cell(40, 8, "Edad", 1, 0, "C", True)
+    pdf.set_xy(15, 50)
+    pdf.cell(0, 5, f"Edad: {edad_act} años", ln=False)
+    pdf.set_xy(80, 50)
+    pdf.cell(0, 5, f"Semanas: {sem}", ln=False)
+    pdf.set_xy(140, 50)
+    pdf.cell(0, 5, f"Salario: ${sal:,.2f}", ln=True)
+    
+    pdf.set_xy(15, 57)
+    pdf.cell(0, 5, f"Objetivo: {edad_obj} años", ln=False)
+    pdf.set_xy(80, 57)
+    pdf.cell(0, 5, f"Asignación esposa: Sí", ln=True)
+    
+    pdf.ln(12)
+    
+    # === RESULTADOS (DESTACADOS) ===
+    pdf.set_font("helvetica", "B", 12)
+    pdf.set_text_color(0, 51, 102)
+    pdf.cell(0, 8, "RESULTADOS", ln=True, align='C')
+    
+    pdf.set_fill_color(230, 240, 255)
+    pdf.set_draw_color(0, 51, 102)
+    pdf.rect(20, 85, 80, 20, 'DF')
+    pdf.set_xy(25, 90)
+    pdf.set_font("helvetica", "B", 9)
+    pdf.set_text_color(0, 0, 0)
+    pdf.cell(0, 5, "Pensión Hoy", ln=True)
+    pdf.set_xy(25, 97)
+    pdf.set_font("helvetica", "B", 14)
+    pdf.set_text_color(0, 51, 102)
+    pdf.cell(0, 5, f"${p_hoy:,.2f}", ln=True)
+    
+    pdf.rect(110, 85, 80, 20, 'DF')
+    pdf.set_xy(115, 90)
+    pdf.set_font("helvetica", "B", 9)
+    pdf.set_text_color(0, 0, 0)
+    pdf.cell(0, 5, f"Pensión a los {edad_obj} años", ln=True)
+    pdf.set_xy(115, 97)
+    pdf.set_font("helvetica", "B", 14)
+    pdf.set_text_color(0, 51, 102)
+    pdf.cell(0, 5, f"${p_proyectada:,.2f}", ln=True)
+    
+    pdf.ln(30)
+    
+    # === TABLA DE PROYECCIÓN ===
+    pdf.set_font("helvetica", "B", 10)
+    pdf.set_fill_color(200, 200, 200)
+    pdf.cell(45, 8, "Año", 1, 0, "C", True)
+    pdf.cell(45, 8, "Edad", 1, 0, "C", True)
     pdf.cell(60, 8, "Pensión Mensual", 1, 1, "C", True)
     
-    pdf.set_font("helvetica", "", 10)
+    pdf.set_font("helvetica", "", 9)
     for i, row in df.iterrows():
-        if i < 10: 
-            pdf.cell(40, 7, str(int(row['Año'])), 1, 0, "C")
-            pdf.cell(40, 7, str(int(row['Edad'])), 1, 0, "C")
+        if i < 12:  # Máximo 12 filas para que quepa en una hoja
+            pdf.cell(45, 7, str(int(row['Año'])), 1, 0, "C")
+            pdf.cell(45, 7, str(int(row['Edad'])), 1, 0, "C")
             pdf.cell(60, 7, f"${row['Pensión']:,.2f}", 1, 1, "C")
-
+    
+    # === FIRMA Y PIE DE PÁGINA ===
+    pdf.set_y(240)
+    pdf.set_font("helvetica", "", 8)
+    pdf.set_text_color(100, 100, 100)
+    pdf.cell(0, 4, "Este reporte es una estimación basada en la Ley 73 del IMSS.", ln=True, align='C')
+    pdf.cell(0, 4, "No constituye un dictamen oficial.", ln=True, align='C')
+    
     pdf.set_y(260)
-    pdf.line(130, 275, 190, 275)
-    pdf.set_y(276)
-    pdf.set_font("helvetica", "B", 10)
-    pdf.cell(0, 5, "Ing. Roberto Villarreal Glz", ln=True, align="R")
+    pdf.line(120, 265, 190, 265)
+    pdf.set_xy(120, 267)
+    pdf.set_font("helvetica", "B", 9)
+    pdf.set_text_color(0, 0, 0)
+    pdf.cell(0, 5, "Ing. Roberto Villarreal Glz", ln=True)
     
     return bytes(pdf.output())
 
@@ -198,7 +244,6 @@ with tab3:
     st.info("Pestaña de ROI y Comparativas en preparación.")
 
 st.caption(f"Ing. Roberto Villarreal Glz. | 2026")                 
-
 
 # ---------------------------------------------------
 # FOOTER PRO (ESTILO IMÁGENES)
