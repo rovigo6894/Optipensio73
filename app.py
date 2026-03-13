@@ -220,7 +220,7 @@ tab1, tab2, tab3 = st.tabs(["📊 Escenario Actual", "🚀 Estrategia Mod 40", "
 
 
 # ============================================
-# PESTAÑA 1: ESCENARIO ACTUAL (CORREGIDA)
+# PESTAÑA 1: ESCENARIO ACTUAL
 # ============================================
 with tab1:
     st.markdown("### 📊 Escenario Actual")
@@ -232,18 +232,17 @@ with tab1:
         value=60,
         help="Selecciona la edad a la que planeas retirarte"
     )
-    # Guardar en session_state para otras pestañas
+    # Guardar en session_state
     st.session_state.edad_retiro = edad_retiro
     
     # Mostrar factor de edad
     factor_edad = FACTORES_EDAD.get(edad_retiro, 0.75)
     st.caption(f"Factor por edad aplicado: {factor_edad*100:.0f}%")
     
-    # Calcular pensión base (con inflación 0 para obtener valor actual)
+    # Calcular pensión base (con inflación 0)
     p_base, _ = calcular_pension_ley73(sal_val, sem_val, edad_val, 60, 0, esp_val)
-    st.session_state.pension_base = p_base
     
-    # Generar tabla desde edad actual hasta edad de retiro
+    # Generar tabla
     datos = []
     for i in range((edad_retiro - edad_val) + 1):
         ed_i = edad_val + i
@@ -251,28 +250,28 @@ with tab1:
         factor_ed = FACTORES_EDAD.get(ed_i, 1.0)
         f_inf = (1 + (inf_val/100)) ** años_desde_hoy
         
-        # Para la edad actual, usar el valor base exacto
         if ed_i == edad_val:
             p_i = p_base
         else:
-            # Para edades futuras, proyectar con inflación y factor por edad
             p_i = p_base * f_inf * (factor_ed / 0.75)
         
         datos.append({
             "Año": 2026 + años_desde_hoy,
             "Edad": ed_i,
-            "Pensión": round(p_i, 2),
-            "Factor": f"{factor_ed*100:.0f}%"
+            "Pensión": round(p_i, 2)
         })
     
     df_actual = pd.DataFrame(datos)
     
-    # Mostrar resultados
+    # Resultados
     p_hoy = df_actual[df_actual['Edad'] == edad_val]['Pensión'].values[0]
     p_futura = df_actual[df_actual['Edad'] == edad_retiro]['Pensión'].values[0]
     
-    col1, col2 = st.columns(2)
+    # GUARDAR PARA PESTAÑA 2
+    st.session_state.pension_futura = p_futura
+    st.session_state.pension_base = p_base
     
+    col1, col2 = st.columns(2)
     with col1:
         st.markdown(f"""
         <div class="metric-container">
@@ -293,29 +292,21 @@ with tab1:
     if st.button("📥 Descargar Reporte PDF", use_container_width=True):
         pdf_out = generar_pdf_pro(df_actual, p_hoy, p_futura, edad_val, edad_retiro, sal_val, sem_val)
         st.download_button("Click para Guardar", pdf_out, "Reporte_Optipension.pdf")
-    
-    # Tabla de proyección
-    with st.expander("📈 Ver proyección año por año"):
-        st.dataframe(
-            df_actual[['Año', 'Edad', 'Factor', 'Pensión']].style.format({
-                'Pensión': '${:,.2f}'
-            }),
-            use_container_width=True,
-            hide_index=True
-        )
+
 
 # ============================================
-# PESTAÑA 2: MODALIDAD 40
+# PESTAÑA 2: MODALIDAD 40 (CORREGIDA)
 # ============================================
 with tab2:
     st.markdown("### 🚀 Estrategia de Modalidad 40")
     
-    # Recuperar edad de retiro de pestaña 1
+    # RECUPERAR VALORES DE PESTAÑA 1
+    pension_base_m40 = st.session_state.get('pension_futura', 16382.65)
     edad_retiro = st.session_state.get('edad_retiro', 60)
     
     st.info(f"""
-    🎯 **Edad de retiro seleccionada: {edad_retiro} años**  
-    *(puedes cambiarla en la pestaña "Escenario Actual")*
+    🎯 **Edad de retiro: {edad_retiro} años**  
+    💰 **Pensión base (sin M40): ${pension_base_m40:,.2f}**
     """)
     
     # Datos actuales
@@ -331,105 +322,60 @@ with tab2:
     
     # Parámetros M40
     col1, col2 = st.columns(2)
-    
     with col1:
-        st.markdown("##### ⚙️ Estrategia M40")
         sal_m40_tope = st.number_input(
             "💰 Salario a cotizar en M40", 
             min_value=500.0, 
             max_value=5000.0, 
             value=2932.0, 
-            step=50.0,
-            help="Máximo recomendado: 25 UMAS (~$3,126)"
+            step=50.0
         )
-    
     with col2:
-        st.markdown("##### 📅 Tiempo")
         meses_m40 = st.select_slider(
             "Meses a cotizar",
             options=[6, 12, 18, 24, 30, 36, 42, 48],
-            value=36,
-            help="A mayor tiempo, mayor inversión pero también mayor pensión"
+            value=36
         )
     
-    # Botón de cálculo
     if st.button("📈 Calcular impacto M40", use_container_width=True, type="primary"):
         
         resultado_m40 = calcular_mod40(
-            edad_val,
-            sem_val,
-            sal_val,
-            sal_m40_tope,
-            meses_m40,
-            edad_retiro,
-            esp_val
+            edad_val, sem_val, sal_val, sal_m40_tope, meses_m40, edad_retiro, esp_val
         )
         
         st.markdown("---")
         st.markdown("### 📊 Resultado de la Estrategia")
         
+        # Usar la pensión base de pestaña 1 como referencia
+        incremento = resultado_m40['con_m40'] - pension_base_m40
+        
         col_r1, col_r2, col_r3 = st.columns(3)
-        
         with col_r1:
-            st.markdown(f"""
-            <div class="metric-container">
-                <div class="metric-label">Pensión Base</div>
-                <div class="metric-value">${resultado_m40['base']:,.2f}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
+            st.metric("Pensión Base (sin M40)", f"${pension_base_m40:,.2f}")
         with col_r2:
-            st.markdown(f"""
-            <div class="metric-container-pro">
-                <div class="metric-label">Pensión con M40</div>
-                <div class="metric-value">${resultado_m40['con_m40']:,.2f}</div>
-            </div>
-            """, unsafe_allow_html=True)
-        
+            st.metric("Pensión con M40", f"${resultado_m40['con_m40']:,.2f}")
         with col_r3:
-            incremento = resultado_m40['con_m40'] - resultado_m40['base']
-            st.markdown(f"""
-            <div style="background-color: #1e293b; padding: 20px; border-radius: 10px; border-left: 5px solid #f59e0b; margin-bottom: 20px;">
-                <div class="metric-label">Incremento mensual</div>
-                <div class="metric-value" style="color: #fbbf24;">+${incremento:,.2f}</div>
-            </div>
-            """, unsafe_allow_html=True)
+            st.metric("Incremento mensual", f"+${incremento:,.2f}")
         
         col_d1, col_d2, col_d3 = st.columns(3)
-        
         with col_d1:
             st.metric("Inversión total", f"${resultado_m40['inversion']:,.2f}")
-        
         with col_d2:
-            st.metric("Tiempo de recuperación", f"{resultado_m40['recuperacion']} meses")
-        
+            st.metric("Recuperación", f"{resultado_m40['recuperacion']} meses")
         with col_d3:
             st.metric("ROI a 20 años", f"{resultado_m40['roi']}%")
         
         # Gráfica
         fig = go.Figure(data=[
-            go.Bar(name='Pensión Base', x=['Actual'], y=[resultado_m40['base']], 
-                   marker_color='#3b82f6', text=[f"${resultado_m40['base']:,.0f}"],
-                   textposition='outside'),
+            go.Bar(name='Sin M40', x=['Actual'], y=[pension_base_m40], 
+                   marker_color='#3b82f6'),
             go.Bar(name='Con M40', x=['Actual'], y=[resultado_m40['con_m40']], 
-                   marker_color='#10b981', text=[f"${resultado_m40['con_m40']:,.0f}"],
-                   textposition='outside')
+                   marker_color='#10b981')
         ])
-        
-        fig.update_layout(
-            title=f"Comparación de pensión mensual (retiro a los {edad_retiro} años)",
-            yaxis_title="Pensión mensual ($)",
-            yaxis_tickformat="$,.0f",
-            height=400,
-            showlegend=True,
-            template="plotly_dark"
-        )
-        
+        fig.update_layout(title="Comparación de pensión mensual", height=400)
         st.plotly_chart(fig, use_container_width=True)
         
-        st.success(f"""
-        ### 💰 Utilidad estimada a 20 años: **${resultado_m40['utilidad_20']:,.2f} MXN**
-        """)
+        st.success(f"Utilidad a 20 años: ${resultado_m40['utilidad_20']:,.2f}")
 
 # ============================================
 # PESTAÑA 3: EN PREPARACIÓN
