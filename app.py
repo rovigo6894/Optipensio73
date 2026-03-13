@@ -69,20 +69,20 @@ def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
     
-    # === ENCABEZADO PROFESIONAL ===
+    # === LOGO MÁS CHICO ===
     try:
-        pdf.image("assets/image.jpg", 10, 8, 30)
+        pdf.image("assets/image.jpg", 10, 8, 20)  # Reducido de 30 a 20
     except:
         pass
     
     pdf.set_font("helvetica", "B", 18)
-    pdf.set_xy(45, 12)
+    pdf.set_xy(40, 12)  # Ajustado por el logo más chico
     pdf.cell(0, 10, "OPTIPENSIÓN 73", ln=True)
     pdf.set_font("helvetica", "", 10)
-    pdf.set_xy(45, 20)
+    pdf.set_xy(40, 20)
     pdf.cell(0, 5, "Consultoría Especializada en Retiro", ln=True)
     pdf.set_font("helvetica", "", 8)
-    pdf.set_xy(45, 25)
+    pdf.set_xy(40, 25)
     pdf.cell(0, 5, f"Reporte generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True)
     
     pdf.ln(15)
@@ -107,13 +107,14 @@ def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
     
     pdf.ln(12)
     
-    # === RESULTADOS (DESTACADOS) ===
+    # === RESULTADOS (DESTACADOS CON DIFERENTES COLORES) ===
     pdf.set_font("helvetica", "B", 12)
     pdf.set_text_color(0, 51, 102)
     pdf.cell(0, 8, "RESULTADOS", ln=True, align='C')
     
-    pdf.set_fill_color(230, 240, 255)
-    pdf.set_draw_color(0, 51, 102)
+    # Recuadro Pensión Hoy (azul)
+    pdf.set_fill_color(230, 240, 255)  # Azul claro
+    pdf.set_draw_color(0, 51, 102)     # Azul oscuro
     pdf.rect(20, 85, 80, 20, 'DF')
     pdf.set_xy(25, 90)
     pdf.set_font("helvetica", "B", 9)
@@ -124,6 +125,9 @@ def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
     pdf.set_text_color(0, 51, 102)
     pdf.cell(0, 5, f"${p_hoy:,.2f}", ln=True)
     
+    # Recuadro Pensión Proyectada (verde)
+    pdf.set_fill_color(220, 255, 220)  # Verde claro
+    pdf.set_draw_color(0, 102, 0)      # Verde oscuro
     pdf.rect(110, 85, 80, 20, 'DF')
     pdf.set_xy(115, 90)
     pdf.set_font("helvetica", "B", 9)
@@ -131,14 +135,20 @@ def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
     pdf.cell(0, 5, f"Pensión a los {edad_obj} años", ln=True)
     pdf.set_xy(115, 97)
     pdf.set_font("helvetica", "B", 14)
-    pdf.set_text_color(0, 51, 102)
+    pdf.set_text_color(0, 102, 0)
     pdf.cell(0, 5, f"${p_proyectada:,.2f}", ln=True)
     
     pdf.ln(30)
     
-    # === TABLA DE PROYECCIÓN ===
+    # === TABLA DE PROYECCIÓN (CENTRADA) ===
+    # Calcular posición para centrar la tabla
+    ancho_total = 150  # 45+45+60
+    margen_izquierdo = (210 - ancho_total) / 2  # 210mm es el ancho de A4
+    
     pdf.set_font("helvetica", "B", 10)
     pdf.set_fill_color(200, 200, 200)
+    
+    pdf.set_x(margen_izquierdo)
     pdf.cell(45, 8, "Año", 1, 0, "C", True)
     pdf.cell(45, 8, "Edad", 1, 0, "C", True)
     pdf.cell(60, 8, "Pensión Mensual", 1, 1, "C", True)
@@ -146,23 +156,36 @@ def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
     pdf.set_font("helvetica", "", 9)
     for i, row in df.iterrows():
         if i < 12:  # Máximo 12 filas para que quepa en una hoja
+            pdf.set_x(margen_izquierdo)
             pdf.cell(45, 7, str(int(row['Año'])), 1, 0, "C")
             pdf.cell(45, 7, str(int(row['Edad'])), 1, 0, "C")
             pdf.cell(60, 7, f"${row['Pensión']:,.2f}", 1, 1, "C")
     
-    # === FIRMA Y PIE DE PÁGINA ===
-    pdf.set_y(240)
-    pdf.set_font("helvetica", "", 8)
+    # === NOTA DE DESLINDE LEGAL ===
+    pdf.set_y(205)
+    pdf.set_font("helvetica", "I", 8)
     pdf.set_text_color(100, 100, 100)
-    pdf.cell(0, 4, "Este reporte es una estimación basada en la Ley 73 del IMSS.", ln=True, align='C')
-    pdf.cell(0, 4, "No constituye un dictamen oficial.", ln=True, align='C')
+    pdf.cell(0, 4, "NOTA IMPORTANTE:", ln=True, align='C')
+    pdf.set_font("helvetica", "", 7)
+    pdf.cell(0, 4, "Este reporte es una estimación basada en la Ley 73 del IMSS y los datos proporcionados.", ln=True, align='C')
+    pdf.cell(0, 4, "No constituye un dictamen oficial ni una garantía de pago por parte del Instituto.", ln=True, align='C')
+    pdf.cell(0, 4, "Los resultados pueden variar según la legislación vigente y condiciones individuales.", ln=True, align='C')
+    pdf.cell(0, 4, "Se recomienda validar la información con un asesor certificado.", ln=True, align='C')
     
-    pdf.set_y(260)
-    pdf.line(120, 265, 190, 265)
-    pdf.set_xy(120, 267)
+    # === FIRMA CENTRADA CON IMAGEN ===
+    pdf.set_y(250)
+    
+    # Intentar poner la firma si existe
+    try:
+        pdf.image("assets/firma.png", 140, 245, 40)  # Ajustar según tamaño de la firma
+    except:
+        # Si no hay imagen de firma, usar línea y texto
+        pdf.line(120, 255, 190, 255)
+    
+    pdf.set_xy(120, 257)
     pdf.set_font("helvetica", "B", 9)
     pdf.set_text_color(0, 0, 0)
-    pdf.cell(0, 5, "Ing. Roberto Villarreal Glz", ln=True)
+    pdf.cell(70, 5, "Ing. Roberto Villarreal Glz", ln=True, align='C')
     
     return bytes(pdf.output())
 
