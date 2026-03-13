@@ -16,9 +16,15 @@ st.set_page_config(
     initial_sidebar_state="expanded" 
 )
 
-# --- ESTILOS CSS: SIDEBAR, LOGO Y RECUADROS DE COLORES ---
+# --- ESTILOS CSS: SIDEBAR, LOGO, RECUADROS Y OCULTAR MENÚS ---
 st.markdown("""
     <style>
+    /* OCULTAR MENÚS DE STREAMLIT (Esquina superior derecha) */
+    #MainMenu {visibility: hidden;}
+    header {visibility: hidden;}
+    footer {visibility: hidden;}
+    .stDeployButton {display:none;}
+
     /* Sidebar angosto de 260px */
     [data-testid="stSidebar"] { 
         background-color: #111827; 
