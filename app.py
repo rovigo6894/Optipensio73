@@ -51,8 +51,7 @@ esposa = st.checkbox("Asignación por esposa (15%)", value=True)
 # LÓGICA DE PROYECCIÓN Y CÁLCULO
 # ---------------------------------------------------
 if st.button("Recalcular simulación"):
-    
-    # Obtenemos la base a los 60 años para proyectar correctamente los factores de edad
+    # Llamada al motor profesional para obtener la base de cálculo
     p_60_hoy, _ = calcular_pension_ley73(
         salario_diario=salario, 
         semanas=semanas, 
@@ -82,7 +81,6 @@ if st.button("Recalcular simulación"):
         datos.append({
             "Edad": edad_i,
             "Año": anio_i,
-            "Factor": f"{int(f_edad*100)}%",
             "Pensión mensual": round(pension_i, 2)
         })
 
@@ -103,35 +101,41 @@ if st.button("Recalcular simulación"):
     st.dataframe(df.style.format({"Pensión mensual": "${:,.2f}"}), use_container_width=True)
 
 # ---------------------------------------------------
-# FOOTER PRO (CORREGIDO)
+# FOOTER PRO (ESTILO IMÁGENES)
 # ---------------------------------------------------
 st.divider()
 
 st.markdown(
 """
-<div style='text-align:center;'>
+<div style='text-align:left;'>
 
 ### 📌 TÉRMINOS Y CONDICIONES
-Este simulador proporciona estimaciones basadas en modelos matemáticos y la Ley 73 del IMSS.  
-Los resultados son aproximados y no constituyen un dictamen oficial.
+El uso de este simulador implica la aceptación de los siguientes términos:
+* **Naturaleza del servicio**: Este simulador proporciona estimaciones basadas en modelos matemáticos y la Ley 73 del IMSS. Los resultados son aproximados y no constituyen un dictamen oficial ni una garantía de pago.
+* **Limitación de responsabilidad**: Optipensión 73 no se hace responsable por decisiones tomadas basadas exclusivamente en los resultados de esta demo. Se recomienda consultar con un asesor certificado.
+* **Uso personal**: Esta herramienta es para uso informativo personal.
 
 ---
 
 ### 🔒 AVISO DE PRIVACIDAD
-Esta aplicación DEMO no almacena datos personales ingresados por el usuario.  
-Los cálculos se realizan en tiempo real.
+**Protección de datos**: Esta aplicación DEMO **NO almacena, guarda ni comparte** ningún dato personal ingresado por el usuario. Todos los cálculos se realizan en tiempo real y los datos se descartan al cerrar la sesión.
+
+**Cookies**: No utilizamos cookies de rastreo ni almacenamos información de navegación.
 
 ---
 
 ### ⚖️ LEGAL
-Propiedad intelectual © 2026 Ing. Roberto Villarreal Glz,  
-📧 contacto@optipension73.com  
-📱 WhatsApp: 871 579 1810  
-📍 Torreón, Coahuila · México
+**Propiedad intelectual**: El código, diseño y contenido de Optipensión 73 son propiedad del Ing. Roberto Villarreal Glz. © 2026. Todos los derechos reservados.
+
+📧 **Email**: contacto@optipension73.com  
+📱 **WhatsApp**: 871 579 1810  
+📍 **Oficina**: Torreón, Coahuila · México
 
 <br>
 
+<div style='text-align:center;'>
 **© 2026 Optipensión 73 · Versión PRO**
+</div>
 
 </div>
 """,
