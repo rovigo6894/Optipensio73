@@ -170,21 +170,21 @@ st.markdown(
 """
 <div style='text-align:center;'>
 
-### TÉRMINOS Y CONDICIONES
+### 📌 TÉRMINOS Y CONDICIONES
 
 Este simulador proporciona estimaciones basadas en modelos matemáticos y la Ley 73 del IMSS.  
 Los resultados son aproximados y no constituyen un dictamen oficial.
 
 ---
 
-### AVISO DE PRIVACIDAD
+### 🔒 AVISO DE PRIVACIDAD
 
 Esta aplicación DEMO no almacena datos personales ingresados por el usuario.  
 Todos los cálculos se realizan en tiempo real.
 
 ---
 
-### LEGAL
+### ⚖️ LEGAL
 
 Propiedad intelectual © 2026  
 Ing. Roberto Villarreal Glz  
@@ -193,9 +193,11 @@ Ing. Roberto Villarreal Glz
 📱 WhatsApp: 871 579 1810  
 📍 Torreón, Coahuila · México
 
+<br>
+
+© 2026 Optipensión 73 · Versión DEMO
+
 </div>
 """,
 unsafe_allow_html=True
 )
-
-st.caption("© 2026 Optipensión 73 · Versión DEMO")
