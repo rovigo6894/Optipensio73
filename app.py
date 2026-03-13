@@ -36,58 +36,61 @@ st.markdown("""
     </style>
     """, unsafe_allow_html=True)
 
-# --- FUNCIÓN PDF PROFESIONAL ---
+# --- FUNCIÓN PDF PROFESIONAL CORREGIDA ---
 def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
     
-    # Encabezado con Logo
-    try: pdf.image("assets/image.jpg", 10, 8, 33)
+    # 1. ENCABEZADO (Más espacio arriba)
+    try: pdf.image("assets/image.jpg", 10, 12, 35)
     except: pass
     
-    pdf.set_font("helvetica", "B", 18)
-    pdf.set_xy(50, 15)
-    pdf.cell(0, 10, "ESTRATEGIA DE RETIRO: OPTIPENSIÓN 73", ln=True, align="R")
-    pdf.ln(12)
-    pdf.line(10, 35, 200, 35)
+    pdf.set_font("helvetica", "B", 20)
+    pdf.set_xy(50, 18)
+    pdf.cell(0, 10, "ESTRATEGIA DE RETIRO PROFESIONAL", ln=True, align="R")
+    pdf.set_font("helvetica", "B", 14)
+    pdf.cell(0, 7, "OPTIPENSIÓN 73", ln=True, align="R")
+    
+    pdf.ln(15)
+    pdf.line(10, 42, 200, 42)
 
-    # 1. Diagnóstico Actual
-    pdf.set_y(42)
+    # 2. DIAGNÓSTICO (Bajamos la posición inicial)
+    pdf.set_y(50)
     pdf.set_fill_color(243, 244, 246)
     pdf.set_font("helvetica", "B", 12)
     pdf.cell(0, 10, "  1. DIAGNÓSTICO DE SITUACIÓN ACTUAL", ln=True, fill=True)
     pdf.set_font("helvetica", "", 11)
-    pdf.ln(2)
-    pdf.cell(0, 8, f" Edad Actual: {edad_act} años  |  Semanas: {sem}  |  SBC: ${sal:,.2f}", ln=True)
+    pdf.ln(3)
+    pdf.cell(0, 8, f" Edad Actual: {edad_act} años  |  Semanas: {sem}  |  Salario Diario: ${sal:,.2f}", ln=True)
 
-    # 2. Cuadros de Resultados
-    pdf.ln(8)
+    # 3. CUADROS DE RESULTADOS (Más amplios y bajos)
+    pdf.ln(12)
     y_pos = pdf.get_y()
     
-    # Izquierdo
+    # Izquierdo (Hoy)
     pdf.set_fill_color(30, 41, 59)
-    pdf.rect(10, y_pos, 92, 28, 'F')
-    pdf.set_xy(10, y_pos + 4)
+    pdf.rect(10, y_pos, 92, 30, 'F')
+    pdf.set_xy(10, y_pos + 5)
     pdf.set_text_color(255, 255, 255)
     pdf.set_font("helvetica", "B", 10)
     pdf.cell(92, 8, "PENSIÓN ESTIMADA HOY", ln=True, align="C")
-    pdf.set_font("helvetica", "B", 16)
+    pdf.set_font("helvetica", "B", 18)
     pdf.set_x(10)
     pdf.cell(92, 12, f"${p_hoy:,.2f} MXN", ln=False, align="C")
 
-    # Derecho
+    # Derecho (Proyectada)
     pdf.set_fill_color(6, 78, 59)
-    pdf.rect(105, y_pos, 92, 28, 'F')
-    pdf.set_xy(105, y_pos + 4)
+    pdf.rect(105, y_pos, 92, 30, 'F')
+    pdf.set_xy(105, y_pos + 5)
     pdf.set_font("helvetica", "B", 10)
     pdf.cell(92, 8, f"PENSIÓN A LOS {edad_obj} AÑOS", ln=True, align="C")
-    pdf.set_font("helvetica", "B", 16)
+    pdf.set_font("helvetica", "B", 18)
     pdf.set_x(105)
     pdf.cell(92, 12, f"${p_proyectada:,.2f} MXN", ln=True, align="C")
     
-    # 3. Tabla de Proyección (Con bajada para evitar amontonamiento)
+    # 4. TABLA DE PROYECCIÓN
     pdf.set_text_color(0, 0, 0)
-    pdf.ln(15) 
+    pdf.ln(20) 
     pdf.set_font("helvetica", "B", 12)
     pdf.cell(0, 10, "  2. PROYECCIÓN DE CRECIMIENTO ANUAL", ln=True)
     
@@ -105,24 +108,22 @@ def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
         pdf.cell(45, 8, str(int(row['Edad'])), 1, 0, "C")
         pdf.cell(95, 8, f"${row['Pensión']:,.2f} MXN", 1, 1, "R")
 
-    # 4. NOTAS LEGALES
-    pdf.ln(8)
+    # 5. NOTAS LEGALES
+    pdf.ln(10)
     pdf.set_font("helvetica", "B", 9)
-    pdf.cell(0, 5, "TÉRMINOS Y CONDICIONES LEGALES:", ln=True)
+    pdf.cell(0, 5, "TÉRMINOS Y CONDICIONES:", ln=True)
     pdf.set_font("helvetica", "", 8)
-    notas = [
-        "- Los cálculos son proyecciones informativas basadas en la Ley del Seguro Social de 1973.",
-        "- El monto real será determinado únicamente por el IMSS al momento de la solicitud.",
-        "- Se considera la inflación anual capturada en los parámetros del simulador.",
-        "- Este reporte no constituye una asesoría legal vinculante."
-    ]
-    for nota in notas:
-        pdf.cell(0, 4, nota, ln=True)
+    pdf.multi_cell(0, 4, "Los cálculos son proyecciones informativas basadas en la Ley del Seguro Social de 1973. El monto real será determinado únicamente por el IMSS. Se considera la inflación anual capturada.")
 
-    # 5. FIRMA
-    pdf.set_y(260)
-    pdf.line(140, 268, 195, 268)
-    pdf.set_y(269)
+    # 6. FIRMA DESDE ASSETS
+    pdf.set_y(250)
+    try:
+        # Ajusta "firma.png" al nombre real de tu archivo de firma en assets
+        pdf.image("assets/firma.png", 145, 245, 45) 
+    except:
+        pdf.line(140, 265, 195, 265) # Línea de respaldo si no hay imagen
+    
+    pdf.set_y(266)
     pdf.set_font("helvetica", "B", 10)
     pdf.cell(0, 5, "Ing. Roberto Villarreal Glz", ln=True, align="R")
     pdf.set_font("helvetica", "", 9)
@@ -141,10 +142,9 @@ with st.sidebar:
     inf_val = st.number_input("Inflación Est. %", value=4.5)
     esp_val = st.checkbox("Asignación Esposa", value=True)
 
-# --- CUERPO PRINCIPAL ---
+# --- CUERPO PRINCIPAL (SIN DIVIDER) ---
 st.title("OPTIPENSIÓN 73")
-# REEMPLAZO DE DIVIDER PARA EVITAR EL ERROR ROJO
-st.markdown("---")
+st.subheader("Consultoría Especializada en Retiro")
 
 tab1, tab2, tab3 = st.tabs(["📊 Escenario Actual", "🚀 Estrategia Mod 40", "📈 ROI & Comparativa"])
 
@@ -181,7 +181,6 @@ with tab1:
 with tab2: st.info("Próximamente: Cálculos de Modalidad 40")
 with tab3: st.info("Próximamente: Análisis de Inversión")
 
-st.markdown("---")
 st.caption("Ing. Roberto Villarreal Glz. | 2026")
 
 
