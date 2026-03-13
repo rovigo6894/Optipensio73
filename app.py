@@ -270,8 +270,9 @@ with tab1:
         fig = px.bar(df_actual, x="Edad", y="Pensión", color="Pensión", color_continuous_scale="Blues", text_auto=".2s")
         st.plotly_chart(fig, use_container_width=True)
 
+
 # ============================================
-# PESTAÑA 2: MODALIDAD 40 (ESTILO PROFESIONAL)
+# PESTAÑA 2: MODALIDAD 40 (CON DATOS DEL SIDEBAR)
 # ============================================
 with tab2:
     st.markdown("### 🚀 Estrategia de Modalidad 40")
@@ -279,31 +280,38 @@ with tab2:
     # Explicación breve
     st.info("""
     La Modalidad 40 permite **aumentar tu pensión** cotizando años adicionales 
-    con un salario más alto. A continuación, calcula el impacto real en tu bolsillo.
+    con un salario más alto. Usa los datos ya ingresados en el panel lateral.
     """)
     
-    # Parámetros específicos para M40
+    # MOSTRAR LOS DATOS ACTUALES DEL SIDEBAR (para referencia)
+    col_ref1, col_ref2, col_ref3 = st.columns(3)
+    with col_ref1:
+        st.metric("Edad actual", f"{edad_val} años")
+    with col_ref2:
+        st.metric("Semanas", f"{sem_val}")
+    with col_ref3:
+        st.metric("Salario actual", f"${sal_val:,.2f}")
+    
+    st.markdown("---")
+    
+    # Parámetros específicos para M40 (solo los que cambian)
     col1, col2 = st.columns(2)
     
     with col1:
-        st.markdown("##### 📋 Parámetros actuales")
-        edad_m40 = st.number_input("Edad actual", 50, 65, 57, key="m40_edad")
-        sem_m40 = st.number_input("Semanas cotizadas", 500, 3000, 1315, key="m40_sem")
-        sal_m40 = st.number_input("Salario diario actual", 100.0, 3500.0, 959.15, key="m40_sal")
-        esp_m40 = st.checkbox("Asignación esposa", True, key="m40_esp")
-    
-    with col2:
-        st.markdown("##### ⚙️ Parámetros de la estrategia")
+        st.markdown("##### ⚙️ Estrategia M40")
         sal_m40_tope = st.number_input(
-            "Salario a cotizar en M40", 
+            "💰 Salario a cotizar en M40", 
             min_value=500.0, 
             max_value=5000.0, 
             value=2932.0, 
             step=50.0,
             help="Máximo recomendado: 25 UMAS (~$3,126)"
         )
+    
+    with col2:
+        st.markdown("##### 📅 Tiempo")
         meses_m40 = st.select_slider(
-            "Meses a cotizar en M40",
+            "Meses a cotizar",
             options=[6, 12, 18, 24, 30, 36, 42, 48],
             value=36,
             help="A mayor tiempo, mayor inversión pero también mayor pensión"
@@ -312,19 +320,22 @@ with tab2:
     # Botón de cálculo
     if st.button("📈 Calcular impacto M40", use_container_width=True, type="primary"):
         
-        # Aquí debes llamar a tu función de cálculo real
-        # Por ahora, simulo valores para que se vea la estructura
+        # Usar datos del sidebar directamente
         from core.mod40 import calcular_mod40
         resultado_m40 = calcular_mod40(
-            edad_m40, sem_m40, sal_m40, 
-            sal_m40_tope, meses_m40, esp_m40
+            edad_val,           # del sidebar
+            sem_val,            # del sidebar
+            sal_val,            # del sidebar
+            sal_m40_tope,       # solo este es nuevo
+            meses_m40,          # solo este es nuevo
+            esp_val             # del sidebar
         )
         
         # Mostrar resultados con el mismo estilo profesional
         st.markdown("---")
         st.markdown("### 📊 Resultado de la Estrategia")
         
-        # Tarjetas de resumen (igual que en pestaña 1)
+        # Tarjetas de resumen
         col_r1, col_r2, col_r3 = st.columns(3)
         
         with col_r1:
@@ -405,7 +416,7 @@ with tab2:
             - **Meses para recuperar:** {resultado_m40['recuperacion']} meses (~{resultado_m40['recuperacion']/12:.1f} años)
             - **Utilidad neta en 20 años:** ${resultado_m40['utilidad_20']:,.2f}
             - **ROI:** {resultado_m40['roi']}%
-            """)        
+            """)     
 
 # PESTAÑAS VACÍAS
 with tab3:
