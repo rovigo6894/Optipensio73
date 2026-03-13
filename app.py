@@ -37,7 +37,7 @@ st.divider()
 # FORMULARIO
 # ---------------------------------------------------
 
-st.subheader("📋 Datos del trabajador")
+st.subheader("Datos del trabajador")
 
 col1, col2 = st.columns(2)
 
@@ -78,14 +78,12 @@ inflacion = st.number_input(
 
 esposa = st.checkbox("Asignación por esposa (15%)")
 
-st.caption("⚡ Valores de referencia: 1315 semanas · retiro a los 60 años")
-
 
 # ---------------------------------------------------
-# BOTON CALCULO
+# CALCULO
 # ---------------------------------------------------
 
-if st.button("🔄 Recalcular simulación"):
+if st.button("Recalcular simulación"):
 
     pension_hoy, pension_futura = calcular_pension_ley73(
         salario,
@@ -96,7 +94,12 @@ if st.button("🔄 Recalcular simulación"):
         esposa
     )
 
+    # RESULTADO PRINCIPAL
     st.success(f"### 💰 Pensión estimada actual: ${pension_hoy:,.0f} MXN")
+
+    # BOTON AZUL PROYECCION
+    st.info(f"### 📈 Pensión proyectada al retiro: ${pension_futura:,.0f} MXN")
+
 
     # ---------------------------------------------------
     # PROYECCION
@@ -120,11 +123,12 @@ if st.button("🔄 Recalcular simulación"):
 
     df = pd.DataFrame(datos)
 
+
     # ---------------------------------------------------
-    # GRAFICA INTERACTIVA
+    # GRAFICA
     # ---------------------------------------------------
 
-    st.subheader("📈 Proyección de crecimiento de la pensión")
+    st.subheader("Proyección de crecimiento de la pensión")
 
     fig = px.line(
         df,
@@ -141,11 +145,12 @@ if st.button("🔄 Recalcular simulación"):
 
     st.plotly_chart(fig, use_container_width=True)
 
+
     # ---------------------------------------------------
     # TABLA
     # ---------------------------------------------------
 
-    st.subheader("📊 Tabla de proyección anual")
+    st.subheader("Tabla de proyección anual")
 
     df["Pensión mensual"] = df["Pensión mensual"].map(lambda x: f"${x:,.2f}")
 
@@ -156,52 +161,41 @@ if st.button("🔄 Recalcular simulación"):
 
 
 # ---------------------------------------------------
-# FOOTER PROFESIONAL
+# FOOTER CENTRADO
 # ---------------------------------------------------
 
 st.divider()
 
-col1, col2 = st.columns([1,4])
+st.markdown(
+"""
+<div style='text-align:center;'>
 
-with col1:
-    st.image("assets/image.jpg", width=80)
+### TÉRMINOS Y CONDICIONES
 
-with col2:
-
-    st.markdown("""
-### 📌 TÉRMINOS Y CONDICIONES
-
-El uso de este simulador implica la aceptación de los siguientes términos:
-
-**Naturaleza del servicio**  
 Este simulador proporciona estimaciones basadas en modelos matemáticos y la Ley 73 del IMSS.  
-Los resultados son aproximados y no constituyen un dictamen oficial ni una garantía de pago.
-
-**Limitación de responsabilidad**  
-Optipensión 73 no se hace responsable por decisiones tomadas basadas exclusivamente en esta simulación.
-
-**Uso personal**  
-Esta herramienta es únicamente para fines informativos.
+Los resultados son aproximados y no constituyen un dictamen oficial.
 
 ---
 
-### 🔒 AVISO DE PRIVACIDAD
+### AVISO DE PRIVACIDAD
 
-Esta aplicación DEMO **no almacena datos personales** ingresados por el usuario.  
-Los cálculos se realizan en tiempo real.
-
-No utilizamos cookies ni rastreo de navegación.
+Esta aplicación DEMO no almacena datos personales ingresados por el usuario.  
+Todos los cálculos se realizan en tiempo real.
 
 ---
 
-### ⚖️ LEGAL
+### LEGAL
 
 Propiedad intelectual © 2026  
-**Ing. Roberto Villarreal Glz**
+Ing. Roberto Villarreal Glz  
 
 📧 contacto@optipension73.com  
 📱 WhatsApp: 871 579 1810  
 📍 Torreón, Coahuila · México
-""")
+
+</div>
+""",
+unsafe_allow_html=True
+)
 
 st.caption("© 2026 Optipensión 73 · Versión DEMO")
