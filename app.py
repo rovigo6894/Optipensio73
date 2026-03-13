@@ -11,7 +11,7 @@ edad_actual = st.number_input("Edad actual", value=57)
 
 edad_retiro = st.selectbox("Edad retiro", [60,61,62,63,64,65])
 
-inflacion = st.number_input("Inflación anual", value=0.04)
+inflacion = st.number_input("Inflación anual (%)", value=4.0)
 
 esposa = st.checkbox("Tiene esposa")
 

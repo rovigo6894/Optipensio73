@@ -13,6 +13,9 @@ def calcular_pension_ley73(
         esposa=False
 ):
 
+    # convertir inflación de porcentaje a decimal
+    inflacion = inflacion / 100
+
     # salario en UMAs
     veces_uma = salario_diario / UMA
 
@@ -48,11 +51,15 @@ def calcular_pension_ley73(
 
     total = total * factor
 
+    # pensión mensual actual
     pension_mensual = total / 12
 
-    # proyección inflación
+    # proyección año por año (ajuste IMSS febrero)
     anos = edad_retiro - edad_actual
 
-    pension_futura = pension_mensual * ((1 + inflacion) ** anos)
+    pension_futura = pension_mensual
+
+    for i in range(anos):
+        pension_futura = pension_futura * (1 + inflacion)
 
     return pension_mensual, pension_futura
