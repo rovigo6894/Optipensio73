@@ -16,38 +16,23 @@ st.set_page_config(
     initial_sidebar_state="expanded" 
 )
 
-# --- ESTILOS CSS QUIRÚRGICOS ---
+# --- ESTILOS CSS ---
 st.markdown("""
     <style>
-    /* 1. OCULTAR BOTONES ESPECÍFICOS DE STREAMLIT SIN MATAR EL HEADER */
-    [data-testid="stStandardNoIllustrationsSidebarContent"] {padding-top: 1rem;}
-    
-    /* Oculta el botón de Deploy (derecha) */
     .stDeployButton {display:none !important;}
-    
-    /* Oculta el menú de tres puntos/rayas (derecha) */
     #MainMenu {visibility: hidden !important;}
-    
-    /* Oculta la marca de agua 'Made with Streamlit' */
     footer {visibility: hidden !important;}
-
-    /* 2. SIDEBAR PERSONALIZADO (260px) */
     [data-testid="stSidebar"] { 
         background-color: #111827; 
         min-width: 260px !important;
         max-width: 260px !important;
     }
-    
-    /* Logo en Sidebar */
     [data-testid="stSidebar"] [data-testid="stImage"] img {
         width: 120px !important;
-        height: auto;
-        display: block;
         margin-left: auto;
         margin-right: auto;
+        display: block;
     }
-    
-    /* 3. RECUADROS DE COLORES PARA PENSIONES */
     .metric-container {
         background-color: #1e293b;
         padding: 20px;
@@ -62,69 +47,106 @@ st.markdown("""
         border-left: 5px solid #10b981;
         margin-bottom: 20px;
     }
-    .metric-label {
-        font-size: 14px;
-        color: #94a3b8;
-        margin-bottom: 5px;
-    }
-    .metric-value {
-        font-size: 32px;
-        font-weight: bold;
-        color: white;
-    }
-    
-    /* 4. TABS */
+    .metric-label { font-size: 14px; color: #94a3b8; margin-bottom: 5px; }
+    .metric-value { font-size: 32px; font-weight: bold; color: white; }
     .stTabs [data-baseweb="tab-list"] { gap: 15px; }
     .stTabs [data-baseweb="tab"] { font-size: 16px; font-weight: bold; }
     </style>
     """, unsafe_allow_html=True)
 
-# --- FUNCIÓN PDF ---
+# --- FUNCIÓN PDF MEJORADA ---
 def generar_pdf_pro(df, p_hoy, p_proyectada, edad_act, edad_obj, sal, sem):
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
-    try: pdf.image("assets/image.jpg", 10, 10, 30)
+    
+    # 1. ENCABEZADO Y LOGO
+    try: pdf.image("assets/image.jpg", 10, 8, 33)
     except: pass
-    pdf.set_font("helvetica", "B", 16)
+    
+    pdf.set_font("helvetica", "B", 18)
+    pdf.set_text_color(17, 24, 39) # Azul muy oscuro
     pdf.set_xy(50, 15)
-    pdf.cell(0, 10, "REPORTE ESTRATÉGICO DE PENSIÓN", ln=True, align="R")
-    pdf.set_font("helvetica", "", 10)
-    pdf.cell(0, 5, f"Generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True, align="R")
-    pdf.set_y(55)
-    pdf.set_fill_color(235, 235, 235)
+    pdf.cell(0, 10, "ESTRATEGIA DE RETIRO: OPTIPENSIÓN 73", ln=True, align="R")
+    
+    pdf.set_font("helvetica", "", 9)
+    pdf.set_text_color(100, 100, 100)
+    pdf.cell(0, 5, f"Fecha de emisión: {datetime.now().strftime('%d/%m/%Y %I:%M %p')}", ln=True, align="R")
+    
+    pdf.ln(15)
+    pdf.set_draw_color(59, 130, 246) # Azul acento
+    pdf.line(10, 38, 200, 38)
+
+    # 2. SECCIÓN: SITUACIÓN ACTUAL
+    pdf.set_y(45)
+    pdf.set_fill_color(243, 244, 246)
     pdf.set_font("helvetica", "B", 12)
-    pdf.cell(0, 8, " 1. Diagnóstico de Situación Actual", ln=True, fill=True)
-    pdf.set_font("helvetica", "", 11)
-    pdf.ln(3)
-    pdf.cell(0, 6, f"      - Edad actual: {edad_act} años", ln=True)
-    pdf.cell(0, 6, f"      - Semanas reconocidas: {sem}", ln=True)
-    pdf.cell(0, 6, f"      - Salario Diario (SBC): ${sal:,.2f} MXN", ln=True)
-    pdf.ln(5)
-    pdf.set_font("helvetica", "B", 12)
-    pdf.cell(0, 8, " 2. Resultados Proyectados", ln=True, fill=True)
+    pdf.set_text_color(31, 41, 55)
+    pdf.cell(0, 10, "  1. DIAGNÓSTICO DE SITUACIÓN ACTUAL", ln=True, fill=True)
+    
     pdf.ln(4)
-    pdf.set_font("helvetica", "B", 13)
-    pdf.set_text_color(0, 51, 102)
-    pdf.cell(0, 7, f"      PENSIÓN ESTIMADA HOY: ${p_hoy:,.2f} MXN", ln=True)
-    pdf.cell(0, 7, f"      PENSIÓN A LOS {edad_obj} AÑOS: ${p_proyectada:,.2f} MXN", ln=True)
+    pdf.set_font("helvetica", "", 11)
+    # Tabla simple de datos
+    pdf.cell(45, 8, f" Edad Actual: {edad_act} años", 0)
+    pdf.cell(55, 8, f" Semanas: {sem}", 0)
+    pdf.cell(60, 8, f" Salario Diario (SBC): ${sal:,.2f}", 0, 1)
+
+    # 3. SECCIÓN: RESULTADOS DESTACADOS (CUADROS)
     pdf.ln(8)
+    # Cuadro Pensión Hoy
+    pdf.set_fill_color(30, 41, 59)
+    pdf.set_text_color(255, 255, 255)
+    pdf.set_font("helvetica", "B", 11)
+    pdf.cell(90, 10, "  PENSIÓN ESTIMADA AL DÍA DE HOY", ln=0, fill=True)
+    pdf.cell(5, 10, "", 0) # Espacio
+    # Cuadro Pensión Proyectada
+    pdf.set_fill_color(6, 78, 59)
+    pdf.cell(90, 10, f"  PENSIÓN PROYECTADA ({edad_obj} AÑOS)", ln=1, fill=True)
+    
+    pdf.set_font("helvetica", "B", 16)
+    pdf.cell(90, 15, f"  ${p_hoy:,.2f} MXN", 1, 0, "C")
+    pdf.cell(5, 15, "", 0) # Espacio
+    pdf.cell(90, 15, f"  ${p_proyectada:,.2f} MXN", 1, 1, "C")
+    
     pdf.set_text_color(0, 0, 0)
+
+    # 4. TABLA DE CRECIMIENTO ANUAL
+    pdf.ln(12)
+    pdf.set_font("helvetica", "B", 12)
+    pdf.cell(0, 10, "  2. PROYECCIÓN DE CRECIMIENTO POR EDAD", ln=True)
+    
     pdf.set_font("helvetica", "B", 10)
-    pdf.set_fill_color(210, 210, 210)
-    pdf.cell(40, 8, "Año", 1, 0, "C", True)
-    pdf.cell(40, 8, "Edad", 1, 0, "C", True)
-    pdf.cell(60, 8, "Pensión Mensual", 1, 1, "C", True)
+    pdf.set_fill_color(59, 130, 246)
+    pdf.set_text_color(255, 255, 255)
+    
+    # Encabezados tabla
+    pdf.cell(45, 10, "Año Calendario", 1, 0, "C", True)
+    pdf.cell(45, 10, "Edad del Asegurado", 1, 0, "C", True)
+    pdf.cell(95, 10, "Pensión Mensual Estimada", 1, 1, "C", True)
+    
     pdf.set_font("helvetica", "", 10)
+    pdf.set_text_color(0, 0, 0)
+    
+    fill = False
     for i, row in df.iterrows():
-        if i < 10: 
-            pdf.cell(40, 7, str(int(row['Año'])), 1, 0, "C")
-            pdf.cell(40, 7, str(int(row['Edad'])), 1, 0, "C")
-            pdf.cell(60, 7, f"${row['Pensión']:,.2f}", 1, 1, "C")
+        pdf.set_fill_color(249, 250, 251)
+        pdf.cell(45, 8, str(int(row['Año'])), 1, 0, "C", fill)
+        pdf.cell(45, 8, str(int(row['Edad'])), 1, 0, "C", fill)
+        pdf.cell(95, 8, f"${row['Pensión']:,.2f} MXN", 1, 1, "R", fill)
+        fill = not fill
+
+    # 5. PIE DE PÁGINA / FIRMA
     pdf.set_y(260)
-    pdf.line(130, 275, 190, 275)
-    pdf.set_y(276)
+    pdf.set_font("helvetica", "I", 8)
+    pdf.set_text_color(150, 150, 150)
+    pdf.cell(0, 5, "Este documento es una proyección informativa basada en los datos proporcionados y la Ley del Seguro Social de 1973.", ln=True, align="C")
+    
+    pdf.ln(5)
     pdf.set_font("helvetica", "B", 10)
+    pdf.set_text_color(31, 41, 55)
     pdf.cell(0, 5, "Ing. Roberto Villarreal Glz", ln=True, align="R")
+    pdf.set_font("helvetica", "", 9)
+    pdf.cell(0, 5, "Consultoría en Pensiones", ln=True, align="R")
+    
     return bytes(pdf.output())
 
 # --- SIDEBAR ---
@@ -138,7 +160,7 @@ with st.sidebar:
     inf_val = st.number_input("Inflación Est. %", value=4.5)
     esp_val = st.checkbox("Asignación Esposa", value=True)
 
-# --- CABECERA PRINCIPAL CON LOGO ---
+# --- CABECERA PRINCIPAL ---
 col_logo, col_title = st.columns([1, 5])
 with col_logo:
     try: st.image("assets/image.jpg", width=100)
@@ -149,7 +171,6 @@ with col_title:
 
 tab1, tab2, tab3 = st.tabs(["📊 Escenario Actual", "🚀 Estrategia Mod 40", "📈 ROI & Comparativa"])
 
-# PESTAÑA 1
 with tab1:
     p_60, _ = calcular_pension_ley73(sal_val, sem_val, edad_val, 60, inf_val, esp_val)
     p_100 = p_60 / 0.75
@@ -163,7 +184,7 @@ with tab1:
     df_actual = pd.DataFrame(datos)
     
     st.markdown("### ¿A qué edad planea retirarse?")
-    edad_obj = st.select_slider("Seleccione la edad de retiro para comparar", options=list(range(60, 66)), value=60)
+    edad_obj = st.select_slider("Seleccione la edad", options=list(range(60, 66)), value=60)
     
     p_hoy = df_actual[df_actual['Edad'] == edad_val]['Pensión'].values[0]
     p_proyectada = df_actual[df_actual['Edad'] == edad_obj]['Pensión'].values[0]
@@ -172,9 +193,15 @@ with tab1:
     with c1:
         st.markdown(f"""<div class="metric-container"><div class="metric-label">Pensión Estimada Hoy</div><div class="metric-value">${p_hoy:,.2f}</div></div>""", unsafe_allow_html=True)
         st.markdown(f"""<div class="metric-container-pro"><div class="metric-label">Pensión a los {edad_obj} años</div><div class="metric-value">${p_proyectada:,.2f}</div></div>""", unsafe_allow_html=True)
-        if st.button("📥 Descargar Reporte PDF"):
-            pdf_out = generar_pdf_pro(df_actual, p_hoy, p_proyectada, edad_val, edad_obj, sal_val, sem_val)
-            st.download_button("Click para Guardar", pdf_out, "Reporte_Optipension.pdf")
+        
+        # EL BOTÓN DE DESCARGA AHORA DISPARA EL PDF MEJORADO
+        pdf_out = generar_pdf_pro(df_actual, p_hoy, p_proyectada, edad_val, edad_obj, sal_val, sem_val)
+        st.download_button(
+            label="📥 Descargar Reporte PDF Profesional",
+            data=pdf_out,
+            file_name=f"Reporte_Retiro_{edad_obj}_años.pdf",
+            mime="application/pdf"
+        )
 
     with c2:
         fig = px.bar(df_actual, x="Edad", y="Pensión", color="Pensión", color_continuous_scale="Blues", text_auto=".2s")
