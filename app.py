@@ -29,47 +29,47 @@ st.set_page_config(
     page_icon="💰"
 )
 
-# --- FUNCIÓN PDF: DISEÑO PRO DE UNA SOLA HOJA ---
+# --- FUNCIÓN PDF: DISEÑO PRO CON ESPACIOS CORREGIDOS ---
 def generar_pdf(df, p_hoy, p_meta, edad_act, edad_obj, sal, sem):
-    # Forzamos formato A4 para control total
     pdf = FPDF(orientation='P', unit='mm', format='A4')
     pdf.add_page()
-    pdf.set_auto_page_break(auto=False) # DESACTIVAMOS EL SALTO AUTOMÁTICO
+    pdf.set_auto_page_break(auto=False) 
     
-    # 1. ENCABEZADO PRO
+    # 1. ENCABEZADO (Logo con espacio)
     try:
-        pdf.image("assets/image.jpg", 12, 12, 35) 
+        pdf.image("assets/image.jpg", 12, 12, 38) # Logo a la izquierda
     except:
         pass
         
     pdf.set_font("helvetica", "B", 20)
-    pdf.set_xy(50, 15)
+    pdf.set_xy(60, 18)
     pdf.cell(0, 10, "Reporte Estratégico de Pensión IMSS", ln=True, align="R")
     pdf.set_font("helvetica", "", 12)
-    pdf.set_x(50)
+    pdf.set_x(60)
     pdf.cell(0, 7, "Consultoría Especializada Ley 1973", ln=True, align="R")
     pdf.set_font("helvetica", "I", 9)
-    pdf.set_x(50)
+    pdf.set_x(60)
     pdf.cell(0, 5, f"Generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True, align="R")
     
-    pdf.ln(12)
+    # --- AQUÍ BAJAMOS TODO EL BLOQUE PARA QUE NO SE EMPALME ---
+    pdf.set_y(55) 
 
-    # 2. SECCIÓN DATOS (DISEÑO LIMPIO)
+    # 2. SECCIÓN DATOS
     pdf.set_fill_color(245, 245, 245)
     pdf.set_font("helvetica", "B", 12)
     pdf.cell(0, 9, "  1. Diagnóstico de Situación Actual", ln=True, fill=True)
-    pdf.ln(2)
+    pdf.ln(3)
     pdf.set_font("helvetica", "", 11)
     pdf.cell(0, 6, f"      - Edad del Asegurado: {edad_act} años", ln=True)
     pdf.cell(0, 6, f"      - Semanas Cotizadas: {sem} semanas", ln=True)
     pdf.cell(0, 6, f"      - Salario Diario (SBC): ${sal:,.2f} MXN", ln=True)
     
-    pdf.ln(5)
+    pdf.ln(8)
 
-    # 3. RESULTADOS (DESTACADOS)
+    # 3. RESULTADOS
     pdf.set_font("helvetica", "B", 12)
     pdf.cell(0, 9, "  2. Resultados Proyectados", ln=True, fill=True)
-    pdf.ln(2)
+    pdf.ln(3)
     pdf.set_font("helvetica", "", 11)
     pdf.cell(0, 6, f"      Pensión estimada hoy: ${p_hoy:,.2f} MXN", ln=True)
     pdf.ln(2)
@@ -78,25 +78,26 @@ def generar_pdf(df, p_hoy, p_meta, edad_act, edad_obj, sal, sem):
     pdf.cell(0, 8, f"      PENSIÓN A LOS {edad_obj} AÑOS: ${p_meta:,.2f} MXN", ln=True)
     pdf.set_text_color(0, 0, 0)
     
-    pdf.ln(5)
+    pdf.ln(8)
 
-    # 4. TABLA (COMPACTA Y PRO)
+    # 4. TABLA (COMPACTA)
     pdf.set_font("helvetica", "B", 10)
+    pdf.set_fill_color(230, 230, 230)
     pdf.cell(30, 7, "Año", border=1, align="C", fill=True)
     pdf.cell(30, 7, "Edad", border=1, align="C", fill=True)
     pdf.cell(70, 7, "Pensión Mensual Proyectada", border=1, align="C", fill=True)
     pdf.ln()
     
     pdf.set_font("helvetica", "", 10)
-    # Mostramos los años clave para no saturar
-    for index, row in df.head(9).iterrows():
+    # Limitamos a 8 filas para asegurar que quepa la firma en la misma hoja
+    for index, row in df.head(8).iterrows():
         pdf.cell(30, 6, str(int(row['Año'])), border=1, align="C")
         pdf.cell(30, 6, str(int(row['Edad'])), border=1, align="C")
         pdf.cell(70, 6, f"${row['Pensión']:,.2f} MXN", border=1, align="C")
         pdf.ln()
 
-    # 5. BLOQUE LEGAL (FIJADO AL FONDO)
-    pdf.set_y(235) # Coordenada fija para evitar el salto
+    # 5. BLOQUE LEGAL (ANCLADO AL FONDO)
+    pdf.set_y(240) 
     pdf.set_font("helvetica", "B", 9)
     pdf.cell(0, 5, "Notas Legales:", ln=True)
     pdf.set_font("helvetica", "I", 8)
@@ -107,16 +108,16 @@ def generar_pdf(df, p_hoy, p_meta, edad_act, edad_obj, sal, sem):
     )
     pdf.multi_cell(0, 4, legal_text)
     
-    # 6. FIRMA (ANCLADA A LA DERECHA)
+    # 6. FIRMA
     pdf.set_y(255)
     pdf.set_text_color(0, 0, 0)
-    pdf.line(130, 268, 195, 268) # Línea de firma
+    pdf.line(130, 272, 195, 272) 
     try:
-        pdf.image("assets/firma.png", 145, 248, 40) # Firma arriba de la línea
+        pdf.image("assets/firma.png", 145, 252, 40) 
     except:
         pass
     
-    pdf.set_y(270)
+    pdf.set_y(274)
     pdf.set_font("helvetica", "B", 10)
     pdf.cell(0, 5, "Ing. Roberto Villarreal Glz", ln=True, align="R")
     pdf.set_font("helvetica", "", 9)
@@ -125,14 +126,14 @@ def generar_pdf(df, p_hoy, p_meta, edad_act, edad_obj, sal, sem):
     return bytes(pdf.output())
 
 # ---------------------------------------------------
-# INTERFAZ (MANTENIENDO TU DISEÑO)
+# INTERFAZ STREAMLIT
 # ---------------------------------------------------
 col_logo, col_title = st.columns([1,4])
 with col_logo:
     st.image("assets/image.jpg", width=85)
 with col_title:
     st.title("Optipensión 73")
-    st.caption("Consultoría Estratégica en Pensiones IMSS")
+    st.caption("Consultoría Especializada en Pensiones IMSS")
 
 st.divider()
 
@@ -151,7 +152,6 @@ inf_val = st.number_input("Inflación anual estimada (%)", value=4.50)
 esp_val = st.checkbox("Asignación por esposa (15%)", value=True)
 
 if st.button("Generar Proyección Profesional"):
-    # Lógica de cálculo
     p_60, _ = calcular_pension_ley73(sal_val, sem_val, edad_val, 60, inf_val, esp_val)
     p_100 = p_60 / 0.75 
     
@@ -170,7 +170,6 @@ if st.button("Generar Proyección Profesional"):
     st.success(f"### Pensión hoy: ${val_h:,.2f} MXN")
     st.info(f"### PENSION PROYECTADA AL RETIRO ({edad_meta} AÑOS): ${val_m:,.2f} MXN")
 
-    # GRÁFICA PRO (Escala de color Viridis)
     fig = px.bar(
         df_res, 
         x="Edad", 
@@ -191,7 +190,7 @@ if st.button("Generar Proyección Profesional"):
             mime="application/pdf"
         )
     except Exception as e:
-        st.error(f"Error técnico en PDF: {e}")
+        st.error(f"Error técnico: {e}")
 
 st.divider()
 st.markdown("Ing. Roberto Villarreal Glz. © 2026 | Torreón, Coahuila")
