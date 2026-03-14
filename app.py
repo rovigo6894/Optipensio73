@@ -201,12 +201,14 @@ with col_title:
 # ============================================
 tab1, tab2, tab3 = st.tabs(["📊 Escenario Actual", "🚀 Estrategia Mod 40", "📈 ROI & Comparativa"])
 
+
 # ============================================
-# PESTAÑA 1: ESCENARIO ACTUAL
+# PESTAÑA 1: ESCENARIO ACTUAL (CON REPORTE PDF PROFESIONAL)
 # ============================================
 with tab1:
     st.markdown("### 📊 Escenario Actual")
     
+    # --- SELECTOR DE EDAD DE RETIRO ---
     edad_retiro = st.select_slider(
         "🎯 Edad de retiro deseada",
         options=[60, 61, 62, 63, 64, 65],
@@ -215,11 +217,14 @@ with tab1:
     )
     st.session_state.edad_retiro = edad_retiro
     
+    # Mostrar factor por edad
     factor_edad = FACTORES_EDAD.get(edad_retiro, 0.75)
     st.caption(f"Factor por edad aplicado: {factor_edad*100:.0f}%")
     
+    # --- CÁLCULO DE PENSIÓN BASE ---
     p_base, _ = calcular_pension_ley73(sal_val, sem_val, edad_val, 60, 0, esp_val)
     
+    # --- GENERAR TABLA DE PROYECCIÓN ---
     datos = []
     for i in range((edad_retiro - edad_val) + 1):
         ed_i = edad_val + i
@@ -240,12 +245,15 @@ with tab1:
     
     df_actual = pd.DataFrame(datos)
     
+    # --- OBTENER VALORES PARA MOSTRAR ---
     p_hoy = df_actual[df_actual['Edad'] == edad_val]['Pensión'].values[0]
     p_futura = df_actual[df_actual['Edad'] == edad_retiro]['Pensión'].values[0]
     
+    # --- GUARDAR EN SESSION STATE ---
     st.session_state.pension_futura = p_futura
     st.session_state.pension_base = p_base
     
+    # --- TARJETAS DE RESULTADOS ---
     col1, col2 = st.columns(2)
     with col1:
         st.markdown(f"""
@@ -263,25 +271,100 @@ with tab1:
         </div>
         """, unsafe_allow_html=True)
     
-    # --- BOTÓN PDF EN PESTAÑA 1 ---
+    # --- BOTÓN PDF PROFESIONAL (IGUAL QUE PESTAÑA 3) ---
     if st.button("📥 Descargar Reporte PDF (Escenario Actual)", use_container_width=True):
-        pdf = FPDF()
+        from fpdf import FPDF
+        pdf = FPDF(orientation='P', unit='mm', format='A4')
         pdf.add_page()
+        
+        # Logo
+        try:
+            pdf.image("assets/image.jpg", 10, 8, 20)
+        except:
+            pass
+        
+        # Encabezado
+        pdf.set_font("helvetica", "B", 18)
+        pdf.set_xy(40, 12)
+        pdf.cell(0, 10, "OPTIPENSION 73", ln=True)
+        pdf.set_font("helvetica", "", 10)
+        pdf.set_xy(40, 20)
+        pdf.cell(0, 5, "Consultoria Especializada en Retiro", ln=True)
+        pdf.set_font("helvetica", "", 8)
+        pdf.set_xy(40, 25)
+        pdf.cell(0, 5, f"Reporte: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True)
+        
+        pdf.ln(15)
+        
+        # Datos del usuario en recuadro
+        pdf.set_fill_color(240,240,240)
+        pdf.set_draw_color(200,200,200)
+        pdf.rect(10, 45, 190, 25, 'DF')
+        
+        pdf.set_font("helvetica", "B", 10)
+        pdf.set_xy(15, 50)
+        pdf.cell(0, 5, f"Edad: {edad_val} años", ln=False)
+        pdf.set_xy(80, 50)
+        pdf.cell(0, 5, f"Semanas: {sem_val}", ln=False)
+        pdf.set_xy(140, 50)
+        pdf.cell(0, 5, f"Salario: ${sal_val:,.2f}", ln=True)
+        
+        pdf.set_xy(15, 57)
+        pdf.cell(0, 5, f"Retiro: {edad_retiro} años", ln=False)
+        pdf.set_xy(80, 57)
+        pdf.cell(0, 5, f"Inflacion: {inf_val}%", ln=True)
+        
+        pdf.ln(15)
+        
+        # Resultado destacado
         pdf.set_font("helvetica", "B", 16)
-        pdf.cell(0, 10, "OPTIPENSION 73 - REPORTE DE PENSION", ln=True, align='C')
-        pdf.set_font("helvetica", "", 12)
-        pdf.cell(0, 10, f"Fecha: {datetime.now().strftime('%d/%m/%Y')}", ln=True, align='C')
+        pdf.set_text_color(0,51,102)
+        pdf.cell(0, 10, "PENSION ESTIMADA", ln=True, align='C')
+        pdf.set_font("helvetica", "B", 24)
+        pdf.set_text_color(0,102,204)
+        pdf.cell(0, 15, f"${p_futura:,.2f}", ln=True, align='C')
+        
         pdf.ln(10)
+        
+        # Tabla de proyección (primeros 5 años)
         pdf.set_font("helvetica", "B", 12)
-        pdf.cell(0, 10, "Datos del usuario:", ln=True)
-        pdf.set_font("helvetica", "", 12)
-        pdf.cell(0, 8, f"Edad actual: {edad_val} años", ln=True)
-        pdf.cell(0, 8, f"Semanas: {sem_val}", ln=True)
-        pdf.cell(0, 8, f"Salario: ${sal_val:,.2f}", ln=True)
-        pdf.cell(0, 8, f"Edad de retiro: {edad_retiro} años", ln=True)
-        pdf.cell(0, 8, f"Pensión estimada: ${p_futura:,.2f}", ln=True)
-        st.download_button("📥 Guardar PDF", bytes(pdf.output()), "Reporte_Pension.pdf", "application/pdf")
+        pdf.set_text_color(0,0,0)
+        pdf.cell(0, 8, "Proyeccion a 5 años:", ln=True)
+        
+        # Encabezados de tabla
+        pdf.set_font("helvetica", "B", 10)
+        pdf.set_fill_color(200,200,200)
+        pdf.cell(45, 8, "Año", 1, 0, "C", True)
+        pdf.cell(45, 8, "Edad", 1, 0, "C", True)
+        pdf.cell(60, 8, "Pension", 1, 1, "C", True)
+        
+        # Datos
+        pdf.set_font("helvetica", "", 9)
+        for i in range(min(5, len(df_actual))):
+            row = df_actual.iloc[i]
+            pdf.cell(45, 7, str(int(row['Año'])), 1, 0, "C")
+            pdf.cell(45, 7, str(int(row['Edad'])), 1, 0, "C")
+            pdf.cell(60, 7, f"${row['Pensión']:,.2f}", 1, 1, "C")
+        
+        # Firma
+        pdf.set_y(250)
+        pdf.line(120, 255, 190, 255)
+        try:
+            pdf.image("assets/firma.png", 140, 240, 40)
+        except:
+            pass
+        pdf.set_xy(120, 257)
+        pdf.set_font("helvetica", "B", 9)
+        pdf.cell(70, 5, "Ing. Roberto Villarreal Glz", ln=True, align='C')
+        
+        st.download_button(
+            "📥 Guardar PDF",
+            bytes(pdf.output()),
+            "Reporte_Pension.pdf",
+            "application/pdf"
+        )
 
+        
 # ============================================
 # PESTAÑA 2: MODALIDAD 40
 # ============================================
