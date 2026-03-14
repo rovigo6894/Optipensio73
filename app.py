@@ -203,7 +203,7 @@ tab1, tab2, tab3 = st.tabs(["📊 Escenario Actual", "🚀 Estrategia Mod 40", "
 
 
 # ============================================
-# PESTAÑA 1: ESCENARIO ACTUAL (VERSIÓN FINAL)
+# PESTAÑA 1: ESCENARIO ACTUAL (CÁLCULOS CORREGIDOS)
 # ============================================
 with tab1:
     st.markdown("### 📊 Escenario Actual")
@@ -221,21 +221,36 @@ with tab1:
     factor_edad = FACTORES_EDAD.get(edad_retiro, 0.75)
     st.caption(f"Factor por edad aplicado: {factor_edad*100:.0f}%")
     
-    # --- CÁLCULO DE PENSIÓN BASE ---
+    # --- CÁLCULO DE PENSIÓN BASE (a los 60 años) ---
     p_base, _ = calcular_pension_ley73(sal_val, sem_val, edad_val, 60, 0, esp_val)
     
-    # --- GENERAR TABLA DE PROYECCIÓN ---
+    # --- GENERAR TABLA DE PROYECCIÓN CORREGIDA ---
     datos = []
-    for i in range((edad_retiro - edad_val) + 1):
+    # Proyectar hasta la edad máxima (65) o la seleccionada, la que sea mayor
+    edad_maxima = max(edad_retiro, 65)
+    
+    for i in range(edad_maxima - edad_val + 1):
         ed_i = edad_val + i
         años_desde_hoy = i
-        factor_ed = FACTORES_EDAD.get(ed_i, 1.0)
+        
+        # Factor de inflación acumulado desde hoy
         f_inf = (1 + (inf_val/100)) ** años_desde_hoy
         
+        # Para la edad actual, usar el valor base exacto
         if ed_i == edad_val:
             p_i = p_base
+        
+        # Para edades futuras
         else:
-            p_i = p_base * f_inf * (factor_ed / 0.75)
+            # Si es menor de 60 años, solo inflación (mismo factor 75%)
+            if ed_i < 60:
+                p_i = p_base * f_inf
+            
+            # Si tiene 60 años o más, aplicar factor de edad + inflación
+            else:
+                factor_ed = FACTORES_EDAD.get(ed_i, 0.75)
+                # La pensión base es a los 60 con factor 75%, por eso dividimos entre 0.75
+                p_i = p_base * f_inf * (factor_ed / 0.75)
         
         datos.append({
             "Año": 2026 + años_desde_hoy,
@@ -271,7 +286,7 @@ with tab1:
         </div>
         """, unsafe_allow_html=True)
     
-    # --- BOTÓN PDF PROFESIONAL (VERSIÓN CORREGIDA) ---
+    # --- BOTÓN PDF PROFESIONAL ---
     if st.button("📥 Descargar Reporte PDF (Escenario Actual)", use_container_width=True):
         from fpdf import FPDF
         pdf = FPDF(orientation='P', unit='mm', format='A4')
@@ -286,10 +301,10 @@ with tab1:
         # Encabezado
         pdf.set_font("helvetica", "B", 18)
         pdf.set_xy(40, 12)
-        pdf.cell(0, 10, "OPTIPENSION 73", ln=True)
+        pdf.cell(0, 10, "OPTIPENSIÓN 73", ln=True)
         pdf.set_font("helvetica", "", 10)
         pdf.set_xy(40, 20)
-        pdf.cell(0, 5, "Consultoria Especializada en Retiro", ln=True)
+        pdf.cell(0, 5, "Consultoría Especializada en Retiro", ln=True)
         pdf.set_font("helvetica", "", 8)
         pdf.set_xy(40, 25)
         pdf.cell(0, 5, f"Reporte: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True)
@@ -312,14 +327,14 @@ with tab1:
         pdf.set_xy(15, 57)
         pdf.cell(0, 5, f"Retiro: {edad_retiro} años", ln=False)
         pdf.set_xy(80, 57)
-        pdf.cell(0, 5, f"Inflacion: {inf_val}%", ln=True)
+        pdf.cell(0, 5, f"Inflación: {inf_val}%", ln=True)
         
         pdf.ln(15)
         
         # Resultado destacado
         pdf.set_font("helvetica", "B", 16)
         pdf.set_text_color(0,51,102)
-        pdf.cell(0, 10, "PENSION ESTIMADA", ln=True, align='C')
+        pdf.cell(0, 10, "PENSIÓN ESTIMADA", ln=True, align='C')
         pdf.set_font("helvetica", "B", 24)
         pdf.set_text_color(0,102,204)
         pdf.cell(0, 15, f"${p_futura:,.2f}", ln=True, align='C')
@@ -329,7 +344,7 @@ with tab1:
         # --- TABLA DE PROYECCIÓN (CENTRADA) ---
         pdf.set_font("helvetica", "B", 12)
         pdf.set_text_color(0,0,0)
-        pdf.cell(0, 8, "Proyeccion a 5 años:", ln=True, align='C')
+        pdf.cell(0, 8, "Proyección a 5 años:", ln=True, align='C')
         pdf.ln(3)
         
         # Calcular posición para centrar la tabla
@@ -342,9 +357,9 @@ with tab1:
         pdf.set_x(margen_izquierdo)
         pdf.cell(45, 8, "Año", 1, 0, "C", True)
         pdf.cell(45, 8, "Edad", 1, 0, "C", True)
-        pdf.cell(60, 8, "Pension", 1, 1, "C", True)
+        pdf.cell(60, 8, "Pensión", 1, 1, "C", True)
         
-        # Datos
+        # Datos (primeros 5 años)
         pdf.set_font("helvetica", "", 9)
         for i in range(min(5, len(df_actual))):
             row = df_actual.iloc[i]
@@ -372,7 +387,7 @@ with tab1:
         pdf.set_xy(120, 262)
         pdf.set_font("helvetica", "", 8)
         pdf.set_text_color(80, 80, 80)
-        pdf.cell(70, 5, "Director General - Optipension 73", ln=True, align='C')
+        pdf.cell(70, 5, "Director General - Optipensión 73", ln=True, align='C')
         
         st.download_button(
             "📥 Guardar PDF",
@@ -380,6 +395,7 @@ with tab1:
             "Reporte_Pension.pdf",
             "application/pdf"
         )
+
         
 # ============================================
 # PESTAÑA 2: MODALIDAD 40
