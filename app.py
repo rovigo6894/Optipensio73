@@ -378,112 +378,222 @@ with tab2:
         st.success(f"Utilidad a 20 años: ${resultado_m40['utilidad_20']:,.2f}")
 
 
+
 # ============================================
-# PESTAÑA 3: ROI Y COMPARATIVA
+# PESTAÑA 3: ROI Y COMPARATIVA (CON GRÁFICA M40)
 # ============================================
 with tab3:
-    st.markdown("### 📈 Análisis de Rentabilidad y Comparativa")
+    st.markdown("### 📈 Comparativa de Escenarios")
     
-    # --- RECUPERAR DATOS DE PESTAÑAS ANTERIORES ---
+    # --- RECUPERAR DATOS ---
     pension_base = st.session_state.get('pension_futura', 16382.65)
     edad_retiro = st.session_state.get('edad_retiro', 60)
     salario = sal_val
     semanas = sem_val
     edad = edad_val
-    inflacion = inf_val
+    inflacion = inf_val / 100
     
     st.info(f"""
-    📊 **Basado en tu escenario actual:**
-    - Pensión base a los {edad_retiro} años: **${pension_base:,.2f}**
-    - Edad actual: {edad} años · Semanas: {semanas} · Salario: ${salario:,.2f}
+    📊 **Tu escenario actual:**
+    - Edad de retiro seleccionada: **{edad_retiro} años**
+    - Pensión estimada: **${pension_base:,.2f}**
     """)
     
-    # --- COMPARATIVA POR EDAD DE RETIRO (60 a 65) ---
-    st.markdown("#### 📊 Comparativa por edad de retiro")
-    
-    # Calcular pensión para cada edad
+    # --- CALCULAR PENSIONES PARA TODAS LAS EDADES ---
     from config.parametros import FACTORES_EDAD
     p_base_60, _ = calcular_pension_ley73(salario, semanas, edad, 60, 0, esp_val)
     
-    opciones_edad = []
-    pensiones_edad = []
-    diferencias = []
+    opciones = []
+    pensiones = []
     
     for ed in range(60, 66):
         factor = FACTORES_EDAD.get(ed, 1.0)
-        # Proyectar con inflación hasta la edad de retiro
         años_faltan = max(0, ed - edad)
-        f_inf = (1 + inflacion/100) ** años_faltan
+        f_inf = (1 + inflacion) ** años_faltan
         p_ed = p_base_60 * (factor / 0.75) * f_inf
-        
-        opciones_edad.append(f"{ed} años")
-        pensiones_edad.append(p_ed)
-        diferencias.append(p_ed - pension_base)
+        opciones.append(ed)
+        pensiones.append(p_ed)
     
-    # Gráfica de barras
-    fig_edad = go.Figure(data=[
+    # --- GRÁFICA POR EDAD ---
+    st.markdown("#### 📊 Pensión según edad de retiro")
+    
+    colores = ['#3b82f6' if ed == edad_retiro else '#94a3b8' for ed in opciones]
+    
+    fig = go.Figure(data=[
         go.Bar(
-            x=opciones_edad,
-            y=pensiones_edad,
-            marker_color=['#3b82f6' if i == edad_retiro-60 else '#94a3b8' for i in range(6)],
-            text=[f"${p:,.0f}" for p in pensiones_edad],
+            x=[f"{ed} años" for ed in opciones],
+            y=pensiones,
+            marker_color=colores,
+            text=[f"${p:,.0f}" for p in pensiones],
             textposition='outside'
         )
     ])
-    fig_edad.update_layout(
-        title="Pensión mensual según edad de retiro",
+    
+    fig.add_hline(
+        y=pension_base,
+        line_dash="dash",
+        line_color="#ef4444",
+        annotation_text=f"Tu selección ({edad_retiro} años)",
+        annotation_position="bottom right"
+    )
+    
+    fig.update_layout(
         xaxis_title="Edad de retiro",
         yaxis_title="Pensión mensual ($)",
         yaxis_tickformat="$,.0f",
-        height=400
+        height=450,
+        showlegend=False
     )
-    st.plotly_chart(fig_edad, use_container_width=True)
+    st.plotly_chart(fig, use_container_width=True)
     
-    # Tabla comparativa
-    df_edades = pd.DataFrame({
-        "Edad de retiro": list(range(60, 66)),
-        "Pensión mensual": [f"${p:,.0f}" for p in pensiones_edad],
-        "Diferencia vs actual": [f"+${p - pension_base:,.0f}" if p > pension_base else f"-${pension_base - p:,.0f}" for p in pensiones_edad]
-    })
-    st.dataframe(df_edades, use_container_width=True, hide_index=True)
+    # --- TABLA COMPARATIVA ---
+    st.markdown("#### 📋 Análisis de diferencias")
+    
+    datos_comp = []
+    for i, ed in enumerate(opciones):
+        dif = pensiones[i] - pension_base
+        datos_comp.append({
+            "Edad": ed,
+            "Pensión": f"${pensiones[i]:,.0f}",
+            "Diferencia vs actual": f"+${dif:,.0f}" if dif > 0 else f"${dif:,.0f}",
+            "Cambio anual": f"+${dif * 12:,.0f}" if dif > 0 else f"${dif * 12:,.0f}"
+        })
+    
+    df_comp = pd.DataFrame(datos_comp)
+    st.dataframe(df_comp, use_container_width=True, hide_index=True)
     
     st.markdown("---")
     
-    # --- COMPARATIVA CON MODALIDAD 40 (si hay datos) ---
+    # --- RECOMENDACIÓN ---
+    mejor_edad = opciones[pensiones.index(max(pensiones))]
+    mejor_pension = max(pensiones)
+    
+    st.success(f"""
+    ### 💡 Recomendación
+    
+    La **mejor opción** sería retirarte a los **{mejor_edad} años**,  
+    obteniendo una pensión de **${mejor_pension:,.2f}**.
+    
+    Esto representa **+${mejor_pension - pension_base:,.2f} mensuales**  
+    y **+${(mejor_pension - pension_base) * 12:,.0f} anuales** más que tu escenario actual.
+    """)
+    
+    st.markdown("---")
+    
+    # --- GRÁFICA M40 (ACTUAL VS M40) ---
+    st.markdown("#### 🚀 Comparativa: Pensión Actual vs Modalidad 40")
+    
     if 'resultado_m40' in st.session_state:
-        st.markdown("#### 🚀 Impacto de Modalidad 40")
         res_m40 = st.session_state.resultado_m40
         
-        col_m1, col_m2, col_m3 = st.columns(3)
-        with col_m1:
-            st.metric("Pensión sin M40", f"${pension_base:,.2f}")
-        with col_m2:
-            st.metric("Pensión con M40", f"${res_m40['con_m40']:,.2f}")
-        with col_m3:
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Pensión actual", f"${pension_base:,.2f}")
+        with col2:
+            st.metric("Con M40", f"${res_m40['con_m40']:,.2f}")
+        with col3:
             st.metric("Incremento", f"+${res_m40['incremento']:,.2f}")
         
-        st.metric("ROI de la estrategia", f"{res_m40['roi']}%")
+        # Gráfica de barras
+        fig_m40 = go.Figure(data=[
+            go.Bar(
+                name='Pensión Actual',
+                x=['Comparación'],
+                y=[pension_base],
+                marker_color='#3b82f6',
+                text=[f"${pension_base:,.0f}"],
+                textposition='outside'
+            ),
+            go.Bar(
+                name='Con Modalidad 40',
+                x=['Comparación'],
+                y=[res_m40['con_m40']],
+                marker_color='#10b981',
+                text=[f"${res_m40['con_m40']:,.0f}"],
+                textposition='outside'
+            )
+        ])
+        
+        fig_m40.update_layout(
+            title="Impacto de la Modalidad 40 en tu pensión",
+            yaxis_title="Pensión mensual ($)",
+            yaxis_tickformat="$,.0f",
+            height=400,
+            barmode='group',
+            showlegend=True
+        )
+        
+        st.plotly_chart(fig_m40, use_container_width=True)
+        
+        # Resumen del beneficio
+        st.success(f"""
+        ### 💰 Beneficio de la estrategia M40
+        
+        - **Inversión total:** ${res_m40['inversion']:,.2f}
+        - **Tiempo de recuperación:** {res_m40['recuperacion']} meses
+        - **ROI a 20 años:** {res_m40['roi']}%
+        - **Utilidad neta en 20 años:** ${res_m40['utilidad_20']:,.2f}
+        """)
+    else:
+        st.info("💡 Calcula primero un escenario de Modalidad 40 en la pestaña 2 para ver la comparativa.")
     
     st.markdown("---")
     
-    # --- CÁLCULO DE RENTABILIDAD A LARGO PLAZO ---
+    # --- PROYECCIÓN DE INGRESOS TOTALES ---
     st.markdown("#### 💰 Proyección de ingresos totales")
     
-    años_vida = st.slider("Expectativa de vida (años)", 75, 100, 85)
-    años_recibiendo = años_vida - edad_retiro
+    col1, col2 = st.columns(2)
+    with col1:
+        expectativa = st.number_input("Expectativa de vida (años)", 70, 100, 85)
+    with col2:
+        ingreso_total = pension_base * 12 * (expectativa - edad_retiro)
+        st.metric(
+            "Ingreso total estimado",
+            f"${ingreso_total:,.0f}",
+            help="Pensión mensual × 12 meses × años de retiro"
+        )
     
-    ingreso_total = pension_base * 12 * años_recibiendo
-    
-    st.metric(
-        "Ingreso total estimado durante el retiro",
-        f"${ingreso_total:,.0f}",
-        help="Considerando pensión mensual sin incrementos adicionales"
-    )
-    
-    # Opción de PDF resumen (opcional)
+    # --- BOTÓN DE DESCARGA ---
     if st.button("📥 Descargar resumen comparativo", use_container_width=True):
-        # Aquí puedes llamar a una función PDF específica para esta pestaña
-        st.info("Función de PDF para comparativa en desarrollo")
+        
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("helvetica", "B", 16)
+        pdf.cell(0, 10, "OPTIPENSIÓN 73 - RESUMEN COMPARATIVO", ln=True, align='C')
+        pdf.ln(10)
+        
+        pdf.set_font("helvetica", "", 11)
+        pdf.cell(0, 8, f"Fecha: {datetime.now().strftime('%d/%m/%Y')}", ln=True)
+        pdf.ln(5)
+        
+        pdf.set_font("helvetica", "B", 12)
+        pdf.cell(0, 8, "Comparativa por edad de retiro:", ln=True)
+        pdf.set_font("helvetica", "", 11)
+        
+        for i, ed in enumerate(opciones):
+            pdf.cell(0, 7, f"{ed} años: ${pensiones[i]:,.2f}", ln=True)
+        
+        if 'resultado_m40' in st.session_state:
+            pdf.ln(5)
+            pdf.set_font("helvetica", "B", 12)
+            pdf.cell(0, 8, "Modalidad 40:", ln=True)
+            pdf.set_font("helvetica", "", 11)
+            pdf.cell(0, 7, f"Pensión con M40: ${res_m40['con_m40']:,.2f}", ln=True)
+            pdf.cell(0, 7, f"Incremento: +${res_m40['incremento']:,.2f}", ln=True)
+            pdf.cell(0, 7, f"ROI: {res_m40['roi']}%", ln=True)
+        
+        pdf.ln(5)
+        pdf.set_font("helvetica", "B", 11)
+        pdf.cell(0, 8, f"Mejor opción: {mejor_edad} años (${mejor_pension:,.2f})", ln=True)
+        
+        pdf_bytes = bytes(pdf.output())
+        
+        st.download_button(
+            "📥 Guardar resumen PDF",
+            pdf_bytes,
+            "Resumen_Comparativo.pdf",
+            "application/pdf"
+        )
 
 # --- FOOTER ---
 st.divider()
