@@ -478,7 +478,7 @@ with tab2:
 
 
 # ============================================
-# PESTAÑA 3: ROI Y COMPARATIVA (CON PDF PROFESIONAL)
+# PESTAÑA 3: ROI Y COMPARATIVA (CON PDF PROFESIONAL - CORREGIDO)
 # ============================================
 with tab3:
     st.markdown("### 📈 Análisis Comparativo Profesional")
@@ -657,13 +657,14 @@ with tab3:
     st.markdown("---")
     
     # ============================================
-    # NUEVA FUNCIÓN PDF PROFESIONAL (INCRUSTADA)
+    # FUNCIÓN PDF PROFESIONAL (CORREGIDA - SIN EMPALME)
     # ============================================
     def generar_pdf_comparativo_profesional(df_edades, pension_base, pensiones_edad, mejor_edad, mejor_pension, 
                                            resultado_m40=None, edad_val=None, sem_val=None, sal_val=None, 
                                            inf_val=None, edad_retiro=None):
         """
         Genera un PDF profesional con el mismo estilo que la Pestaña 1
+        (CORREGIDO - sin empalme de firma)
         """
         from fpdf import FPDF
         import datetime
@@ -679,7 +680,7 @@ with tab3:
         
         # --- Encabezado profesional ---
         pdf.set_font("helvetica", "B", 18)
-        pdf.set_text_color(0, 51, 102)  # Azul marino
+        pdf.set_text_color(0, 51, 102)
         pdf.set_xy(40, 12)
         pdf.cell(0, 10, "OPTIPENSION 73", ln=True)
         
@@ -699,7 +700,7 @@ with tab3:
         
         # --- Tarjeta de datos del asegurado ---
         if edad_val and sem_val and sal_val:
-            pdf.set_fill_color(245, 245, 245)  # Gris muy claro
+            pdf.set_fill_color(245, 245, 245)
             pdf.set_draw_color(200, 200, 200)
             pdf.rect(10, 45, 190, 25, 'DF')
             
@@ -726,27 +727,25 @@ with tab3:
         pdf.ln(5)
         
         # --- Tabla comparativa profesional ---
-        # Calcular posición para centrar la tabla
-        ancho_total = 160  # 45+45+70
+        ancho_total = 160
         margen_izquierdo = (210 - ancho_total) / 2
         
-        # Encabezados de tabla
+        # Encabezados
         pdf.set_font("helvetica", "B", 10)
-        pdf.set_fill_color(0, 51, 102)  # Azul marino
-        pdf.set_text_color(255, 255, 255)  # Blanco
+        pdf.set_fill_color(0, 51, 102)
+        pdf.set_text_color(255, 255, 255)
         pdf.set_x(margen_izquierdo)
         pdf.cell(45, 10, "Edad", 1, 0, "C", True)
         pdf.cell(45, 10, "Mensual", 1, 0, "C", True)
         pdf.cell(70, 10, "Anual", 1, 1, "C", True)
         
-        # Datos de la tabla
+        # Datos
         pdf.set_font("helvetica", "", 9)
         pdf.set_text_color(0, 0, 0)
         fill = False
         for i, edad in enumerate(range(60, 66)):
             pdf.set_x(margen_izquierdo)
             
-            # Color de fondo alternado
             if fill:
                 pdf.set_fill_color(245, 245, 245)
             else:
@@ -761,11 +760,11 @@ with tab3:
         
         # --- Mejor opción destacada ---
         pdf.set_font("helvetica", "B", 12)
-        pdf.set_text_color(0, 100, 0)  # Verde oscuro
+        pdf.set_text_color(0, 100, 0)
         pdf.cell(0, 8, f"MEJOR OPCION: {mejor_edad} años", ln=True, align='C')
         
         pdf.set_font("helvetica", "B", 20)
-        pdf.set_text_color(0, 102, 204)  # Azul
+        pdf.set_text_color(0, 102, 204)
         pdf.cell(0, 12, f"${mejor_pension:,.2f}", ln=True, align='C')
         
         pdf.ln(5)
@@ -775,14 +774,13 @@ with tab3:
         pdf.line(10, pdf.get_y(), 200, pdf.get_y())
         pdf.ln(5)
         
-        # --- Sección Modalidad 40 (si aplica) ---
+        # --- Sección Modalidad 40 ---
         if resultado_m40:
             pdf.set_font("helvetica", "B", 14)
             pdf.set_text_color(0, 51, 102)
             pdf.cell(0, 10, "ANALISIS MODALIDAD 40", ln=True, align='C')
             pdf.ln(5)
             
-            # Tabla de Modalidad 40
             datos_m40 = [
                 ["Concepto", "Valor"],
                 ["Pensión con Modalidad 40", f"${resultado_m40['con_m40']:,.2f}"],
@@ -793,7 +791,6 @@ with tab3:
                 ["Utilidad en 20 años", f"${resultado_m40['utilidad_20']:,.2f}"],
             ]
             
-            # Centrar tabla
             ancho_m40 = 120
             margen_m40 = (210 - ancho_m40) / 2
             
@@ -817,36 +814,52 @@ with tab3:
                 pdf.cell(60, 7, row[0], 1, 0, "L", fill)
                 pdf.cell(60, 7, row[1], 1, 1, "R", fill)
                 fill = not fill
+            
+            pdf.ln(15)  # Espacio extra después de la tabla
         
-        # --- Firma profesional (igual que Pestaña 1) ---
-        pdf.set_y(250)
+        # ===== FIRMA CORREGIDA (SIN EMPALME) =====
+        # Guardar posición actual
+        y_actual = pdf.get_y()
+        
+        # Verificar si hay suficiente espacio (necesitamos ~50mm)
+        if y_actual > 230:
+            pdf.add_page()
+            y_actual = 30
+        
+        # Posicionar firma con espacio
+        pdf.set_y(y_actual + 10)
+        
+        # Línea para firma
         pdf.set_draw_color(0, 51, 102)
-        pdf.line(120, 255, 190, 255)
+        pdf.line(120, pdf.get_y(), 190, pdf.get_y())
+        pdf.ln(2)
         
+        # Imagen de firma
         try:
-            pdf.image("assets/firma.png", 140, 240, 40)
+            pdf.image("assets/firma.png", 140, pdf.get_y(), 40)
+            pdf.ln(15)
         except:
-            pass
+            pdf.ln(8)
         
-        pdf.set_xy(120, 257)
+        # Nombre
         pdf.set_font("helvetica", "B", 9)
         pdf.set_text_color(0, 51, 102)
-        pdf.cell(70, 5, "Ing. Roberto Villarreal Glz", ln=True, align='C')
+        pdf.cell(0, 5, "Ing. Roberto Villarreal Glz", ln=True, align='C')
         
-        pdf.set_xy(120, 262)
+        # Cargo
         pdf.set_font("helvetica", "", 8)
         pdf.set_text_color(100, 100, 100)
-        pdf.cell(70, 5, "Director General - Optipensión 73", ln=True, align='C')
+        pdf.cell(0, 4, "Director General - Optipensión 73", ln=True, align='C')
         
         # Pie de página
-        pdf.set_y(280)
+        pdf.ln(3)
         pdf.set_font("helvetica", "I", 7)
         pdf.set_text_color(150, 150, 150)
         pdf.cell(0, 3, "Optipensión 73 - Consultoría Especializada en Pensiones", ln=True, align='C')
         
         return bytes(pdf.output())
     
-    # --- Botón de descarga con el nuevo PDF profesional ---
+    # --- Botón de descarga ---
     if st.button("📥 DESCARGAR REPORTE COMPLETO PDF", use_container_width=True):
         pdf_bytes = generar_pdf_comparativo_profesional(
             None,
@@ -865,7 +878,7 @@ with tab3:
         st.download_button(
             "📥 Guardar PDF",
             pdf_bytes,
-            f"Reporte_Comparativa_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
+            f"Reporte_Comparativa_{datetime.datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf",
             "application/pdf"
         )
 
