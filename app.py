@@ -205,6 +205,9 @@ tab1, tab2, tab3 = st.tabs(["📊 Escenario Actual", "🚀 Estrategia Mod 40", "
 # ============================================
 # PESTAÑA 1: ESCENARIO ACTUAL (CÁLCULOS CORREGIDOS)
 # ============================================
+# ============================================
+# PESTAÑA 1: ESCENARIO ACTUAL (CON DESLINDE LEGAL)
+# ============================================
 with tab1:
     st.markdown("### 📊 Escenario Actual")
     
@@ -286,7 +289,7 @@ with tab1:
         </div>
         """, unsafe_allow_html=True)
     
-    # --- BOTÓN PDF PROFESIONAL ---
+    # --- BOTÓN PDF PROFESIONAL CON DESLINDE LEGAL ---
     if st.button("📥 Descargar Reporte PDF (Escenario Actual)", use_container_width=True):
         from fpdf import FPDF
         pdf = FPDF(orientation='P', unit='mm', format='A4')
@@ -370,21 +373,30 @@ with tab1:
         
         pdf.ln(10)
         
-        # --- FIRMA CON CARGO (CENTRADA) ---
-        pdf.set_y(250)
-        pdf.line(120, 255, 190, 255)
+        # ===== DESLINDE LEGAL (IGUAL QUE EN EL FOOTER) =====
+        pdf.set_y(220)  # Posición para el deslinde
+        pdf.set_font("helvetica", "I", 7)
+        pdf.set_text_color(100, 100, 100)
+        
+        deslinde = """NOTA LEGAL: Este reporte es una estimación basada en la Ley 73 del IMSS. Los montos son aproximados y no constituyen una garantía de pago. Recomendamos consultar con un asesor certificado. Optipensión 73 no se hace responsable por decisiones tomadas con esta información."""
+        
+        pdf.multi_cell(0, 3, deslinde, align='C')
+        
+        # ===== FIRMA CON CARGO (CENTRADA) =====
+        pdf.set_y(240)
+        pdf.line(120, 245, 190, 245)
         try:
-            pdf.image("assets/firma.png", 140, 240, 40)
+            pdf.image("assets/firma.png", 140, 230, 40)
         except:
             pass
         
         # Nombre centrado
-        pdf.set_xy(120, 257)
+        pdf.set_xy(120, 247)
         pdf.set_font("helvetica", "B", 9)
         pdf.cell(70, 5, "Ing. Roberto Villarreal Glz", ln=True, align='C')
         
         # Cargo centrado DEBAJO del nombre
-        pdf.set_xy(120, 262)
+        pdf.set_xy(120, 252)
         pdf.set_font("helvetica", "", 8)
         pdf.set_text_color(80, 80, 80)
         pdf.cell(70, 5, "Director General - Optipensión 73", ln=True, align='C')
@@ -395,7 +407,6 @@ with tab1:
             "Reporte_Pension.pdf",
             "application/pdf"
         )
-
         
 # ============================================
 # PESTAÑA 2: MODALIDAD 40
