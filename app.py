@@ -203,7 +203,7 @@ tab1, tab2, tab3 = st.tabs(["📊 Escenario Actual", "🚀 Estrategia Mod 40", "
 
 
 # ============================================
-# PESTAÑA 1: ESCENARIO ACTUAL (CON REPORTE PDF PROFESIONAL)
+# PESTAÑA 1: ESCENARIO ACTUAL (VERSIÓN FINAL)
 # ============================================
 with tab1:
     st.markdown("### 📊 Escenario Actual")
@@ -271,7 +271,7 @@ with tab1:
         </div>
         """, unsafe_allow_html=True)
     
-    # --- BOTÓN PDF PROFESIONAL (IGUAL QUE PESTAÑA 3) ---
+    # --- BOTÓN PDF PROFESIONAL (VERSIÓN CORREGIDA) ---
     if st.button("📥 Descargar Reporte PDF (Escenario Actual)", use_container_width=True):
         from fpdf import FPDF
         pdf = FPDF(orientation='P', unit='mm', format='A4')
@@ -326,14 +326,20 @@ with tab1:
         
         pdf.ln(10)
         
-        # Tabla de proyección (primeros 5 años)
+        # --- TABLA DE PROYECCIÓN (CENTRADA) ---
         pdf.set_font("helvetica", "B", 12)
         pdf.set_text_color(0,0,0)
-        pdf.cell(0, 8, "Proyeccion a 5 años:", ln=True)
+        pdf.cell(0, 8, "Proyeccion a 5 años:", ln=True, align='C')
+        pdf.ln(3)
+        
+        # Calcular posición para centrar la tabla
+        ancho_total = 150  # 45+45+60
+        margen_izquierdo = (210 - ancho_total) / 2  # 210mm es el ancho de A4
         
         # Encabezados de tabla
         pdf.set_font("helvetica", "B", 10)
         pdf.set_fill_color(200,200,200)
+        pdf.set_x(margen_izquierdo)
         pdf.cell(45, 8, "Año", 1, 0, "C", True)
         pdf.cell(45, 8, "Edad", 1, 0, "C", True)
         pdf.cell(60, 8, "Pension", 1, 1, "C", True)
@@ -342,20 +348,31 @@ with tab1:
         pdf.set_font("helvetica", "", 9)
         for i in range(min(5, len(df_actual))):
             row = df_actual.iloc[i]
+            pdf.set_x(margen_izquierdo)
             pdf.cell(45, 7, str(int(row['Año'])), 1, 0, "C")
             pdf.cell(45, 7, str(int(row['Edad'])), 1, 0, "C")
             pdf.cell(60, 7, f"${row['Pensión']:,.2f}", 1, 1, "C")
         
-        # Firma
+        pdf.ln(10)
+        
+        # --- FIRMA CON CARGO (CENTRADA) ---
         pdf.set_y(250)
         pdf.line(120, 255, 190, 255)
         try:
             pdf.image("assets/firma.png", 140, 240, 40)
         except:
             pass
+        
+        # Nombre centrado
         pdf.set_xy(120, 257)
         pdf.set_font("helvetica", "B", 9)
         pdf.cell(70, 5, "Ing. Roberto Villarreal Glz", ln=True, align='C')
+        
+        # Cargo centrado DEBAJO del nombre
+        pdf.set_xy(120, 262)
+        pdf.set_font("helvetica", "", 8)
+        pdf.set_text_color(80, 80, 80)
+        pdf.cell(70, 5, "Director General - Optipension 73", ln=True, align='C')
         
         st.download_button(
             "📥 Guardar PDF",
@@ -363,7 +380,6 @@ with tab1:
             "Reporte_Pension.pdf",
             "application/pdf"
         )
-
         
 # ============================================
 # PESTAÑA 2: MODALIDAD 40
