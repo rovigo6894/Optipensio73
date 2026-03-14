@@ -294,13 +294,14 @@ with tab1:
         st.download_button("Click para Guardar", pdf_out, "Reporte_Optipension.pdf")
 
 
+
 # ============================================
 # PESTAÑA 2: MODALIDAD 40 (CORREGIDA)
 # ============================================
 with tab2:
     st.markdown("### 🚀 Estrategia de Modalidad 40")
     
-    # RECUPERAR VALORES DE PESTAÑA 1
+    # Recuperar valores de pestaña 1
     pension_base_m40 = st.session_state.get('pension_futura', 16382.65)
     edad_retiro = st.session_state.get('edad_retiro', 60)
     
@@ -324,24 +325,31 @@ with tab2:
     col1, col2 = st.columns(2)
     with col1:
         sal_m40_tope = st.number_input(
-            "💰 Salario a cotizar en M40", 
-            min_value=500.0, 
-            max_value=5000.0, 
-            value=2932.0, 
+            "💰 Salario a cotizar en M40",
+            min_value=500.0,
+            max_value=5000.0,
+            value=2932.0,
             step=50.0
         )
     with col2:
         meses_m40 = st.select_slider(
-            "Meses a cotizar",
+            "📅 Meses a cotizar",
             options=[6, 12, 18, 24, 30, 36, 42, 48],
             value=36
         )
     
+    # Botón de cálculo
     if st.button("📈 Calcular impacto M40", use_container_width=True, type="primary"):
         
+        # ✅ NOMBRE CORRECTO DE LA FUNCIÓN
+        from core.mod40 import calcular_mod40
         resultado_m40 = calcular_mod40(
             edad_val, sem_val, sal_val, sal_m40_tope, meses_m40, edad_retiro, esp_val
         )
+        
+        # ✅ GUARDAR EN SESSION_STATE (¡ESTAS LÍNEAS SON CLAVE!)
+        st.session_state.resultado_m40 = resultado_m40
+        st.session_state.m40_calculado = True
         
         st.markdown("---")
         st.markdown("### 📊 Resultado de la Estrategia")
@@ -365,19 +373,17 @@ with tab2:
         with col_d3:
             st.metric("ROI a 20 años", f"{resultado_m40['roi']}%")
         
-        # Gráfica
+        # Gráfica rápida
+        import plotly.graph_objects as go
         fig = go.Figure(data=[
-            go.Bar(name='Sin M40', x=['Actual'], y=[pension_base_m40], 
+            go.Bar(name='Sin M40', x=['Comparación'], y=[pension_base_m40],
                    marker_color='#3b82f6'),
-            go.Bar(name='Con M40', x=['Actual'], y=[resultado_m40['con_m40']], 
+            go.Bar(name='Con M40', x=['Comparación'], y=[resultado_m40['con_m40']],
                    marker_color='#10b981')
         ])
-        fig.update_layout(title="Comparación de pensión mensual", height=400)
+        fig.update_layout(title="Comparación rápida", height=300)
         st.plotly_chart(fig, use_container_width=True)
         
-        st.success(f"Utilidad a 20 años: ${resultado_m40['utilidad_20']:,.2f}")
-
-
 
 # ============================================
 # PESTAÑA 3: ROI Y COMPARATIVA (CORREGIDA)
