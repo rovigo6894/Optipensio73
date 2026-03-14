@@ -815,43 +815,35 @@ with tab3:
                 pdf.cell(60, 7, row[1], 1, 1, "R", fill)
                 fill = not fill
             
-            pdf.ln(15)  # Espacio extra después de la tabla
+            pdf.ln(15)
         
-        # ===== FIRMA CORREGIDA (SIN EMPALME) =====
-        # Guardar posición actual
+        # ===== FIRMA CORREGIDA =====
         y_actual = pdf.get_y()
         
-        # Verificar si hay suficiente espacio (necesitamos ~50mm)
         if y_actual > 230:
             pdf.add_page()
             y_actual = 30
         
-        # Posicionar firma con espacio
         pdf.set_y(y_actual + 10)
         
-        # Línea para firma
         pdf.set_draw_color(0, 51, 102)
         pdf.line(120, pdf.get_y(), 190, pdf.get_y())
         pdf.ln(2)
         
-        # Imagen de firma
         try:
             pdf.image("assets/firma.png", 140, pdf.get_y(), 40)
             pdf.ln(15)
         except:
             pdf.ln(8)
         
-        # Nombre
         pdf.set_font("helvetica", "B", 9)
         pdf.set_text_color(0, 51, 102)
         pdf.cell(0, 5, "Ing. Roberto Villarreal Glz", ln=True, align='C')
         
-        # Cargo
         pdf.set_font("helvetica", "", 8)
         pdf.set_text_color(100, 100, 100)
         pdf.cell(0, 4, "Director General - Optipensión 73", ln=True, align='C')
         
-        # Pie de página
         pdf.ln(3)
         pdf.set_font("helvetica", "I", 7)
         pdf.set_text_color(150, 150, 150)
@@ -861,6 +853,8 @@ with tab3:
     
     # --- Botón de descarga ---
     if st.button("📥 DESCARGAR REPORTE COMPLETO PDF", use_container_width=True):
+        import datetime  # <--- IMPORTACIÓN CORREGIDA AQUÍ
+        
         pdf_bytes = generar_pdf_comparativo_profesional(
             None,
             pension_base,
@@ -882,6 +876,7 @@ with tab3:
             "application/pdf"
         )
 
+        
 # ============================================
 # FOOTER
 # ============================================
