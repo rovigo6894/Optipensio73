@@ -12,7 +12,7 @@ from config.parametros import FACTORES_EDAD
 from core.mod40 import calcular_mod40
 
 # ============================================
-# FUNCIÓN PDF PROFESIONAL PARA PESTAÑA 3
+# FUNCIÓN PDF PROFESIONAL (SIN CARACTERES ESPECIALES)
 # ============================================
 def generar_pdf_comparativo(df_edades, pension_base, pensiones_edad, mejor_edad, mejor_pension, 
                            resultado_m40=None, edad_val=None, sem_val=None, sal_val=None, 
@@ -27,16 +27,16 @@ def generar_pdf_comparativo(df_edades, pension_base, pensiones_edad, mejor_edad,
     except:
         pass
     
-    # Encabezado
+    # Encabezado (sin acentos)
     pdf.set_font("helvetica", "B", 18)
     pdf.set_xy(40, 12)
-    pdf.cell(0, 10, "OPTIPENSIÓN 73", ln=True)
+    pdf.cell(0, 10, "OPTIPENSION 73", ln=True)
     pdf.set_font("helvetica", "", 10)
     pdf.set_xy(40, 20)
-    pdf.cell(0, 5, "Consultoría Especializada en Retiro", ln=True)
+    pdf.cell(0, 5, "Consultoria Especializada en Retiro", ln=True)
     pdf.set_font("helvetica", "", 8)
     pdf.set_xy(40, 25)
-    pdf.cell(0, 5, f"Reporte generado: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True)
+    pdf.cell(0, 5, f"Reporte: {datetime.now().strftime('%d/%m/%Y %H:%M')}", ln=True)
     
     pdf.ln(15)
     
@@ -54,17 +54,19 @@ def generar_pdf_comparativo(df_edades, pension_base, pensiones_edad, mejor_edad,
         pdf.set_xy(140, 50)
         pdf.cell(0, 5, f"Salario: ${sal_val:,.2f}", ln=True)
         
-        pdf.set_xy(15, 57)
-        pdf.cell(0, 5, f"Retiro: {edad_retiro} años", ln=False)
-        pdf.set_xy(80, 57)
-        pdf.cell(0, 5, f"Inflación: {inf_val}%", ln=True)
+        if edad_retiro:
+            pdf.set_xy(15, 57)
+            pdf.cell(0, 5, f"Retiro: {edad_retiro} años", ln=False)
+        if inf_val:
+            pdf.set_xy(80, 57)
+            pdf.cell(0, 5, f"Inflacion: {inf_val}%", ln=True)
     
     pdf.ln(15)
     
     # Resultado actual
     pdf.set_font("helvetica", "B", 16)
     pdf.set_text_color(0,51,102)
-    pdf.cell(0, 10, f"Pensión a los {edad_retiro} años", ln=True, align='C')
+    pdf.cell(0, 10, f"Pension a los {edad_retiro} años", ln=True, align='C')
     pdf.set_font("helvetica", "B", 20)
     pdf.set_text_color(0,102,204)
     pdf.cell(0, 12, f"${pension_base:,.2f}", ln=True, align='C')
@@ -83,7 +85,7 @@ def generar_pdf_comparativo(df_edades, pension_base, pensiones_edad, mejor_edad,
     pdf.ln(5)
     pdf.set_font("helvetica", "B", 11)
     pdf.set_text_color(0,102,0)
-    pdf.cell(0, 7, f"✨ Mejor opción: {mejor_edad} años (${mejor_pension:,.2f})", ln=True)
+    pdf.cell(0, 7, f"Mejor opcion: {mejor_edad} años (${mejor_pension:,.2f})", ln=True)
     
     pdf.ln(8)
     
@@ -91,12 +93,12 @@ def generar_pdf_comparativo(df_edades, pension_base, pensiones_edad, mejor_edad,
     if resultado_m40:
         pdf.set_text_color(0,0,0)
         pdf.set_font("helvetica", "B", 12)
-        pdf.cell(0, 8, "📈 Modalidad 40:", ln=True)
+        pdf.cell(0, 8, "Modalidad 40:", ln=True)
         pdf.set_font("helvetica", "", 10)
-        pdf.cell(0, 6, f"Pensión con M40: ${resultado_m40['con_m40']:,.2f}", ln=True)
+        pdf.cell(0, 6, f"Pension con M40: ${resultado_m40['con_m40']:,.2f}", ln=True)
         pdf.cell(0, 6, f"Incremento: +${resultado_m40['incremento']:,.2f}", ln=True)
-        pdf.cell(0, 6, f"Inversión: ${resultado_m40['inversion']:,.2f}", ln=True)
-        pdf.cell(0, 6, f"Recuperación: {resultado_m40['recuperacion']} meses", ln=True)
+        pdf.cell(0, 6, f"Inversion: ${resultado_m40['inversion']:,.2f}", ln=True)
+        pdf.cell(0, 6, f"Recuperacion: {resultado_m40['recuperacion']} meses", ln=True)
         pdf.cell(0, 6, f"ROI: {resultado_m40['roi']}%", ln=True)
         pdf.cell(0, 6, f"Utilidad 20 años: ${resultado_m40['utilidad_20']:,.2f}", ln=True)
     
@@ -260,6 +262,25 @@ with tab1:
             <div class="metric-value">${p_futura:,.2f}</div>
         </div>
         """, unsafe_allow_html=True)
+    
+    # --- BOTÓN PDF EN PESTAÑA 1 ---
+    if st.button("📥 Descargar Reporte PDF (Escenario Actual)", use_container_width=True):
+        pdf = FPDF()
+        pdf.add_page()
+        pdf.set_font("helvetica", "B", 16)
+        pdf.cell(0, 10, "OPTIPENSION 73 - REPORTE DE PENSION", ln=True, align='C')
+        pdf.set_font("helvetica", "", 12)
+        pdf.cell(0, 10, f"Fecha: {datetime.now().strftime('%d/%m/%Y')}", ln=True, align='C')
+        pdf.ln(10)
+        pdf.set_font("helvetica", "B", 12)
+        pdf.cell(0, 10, "Datos del usuario:", ln=True)
+        pdf.set_font("helvetica", "", 12)
+        pdf.cell(0, 8, f"Edad actual: {edad_val} años", ln=True)
+        pdf.cell(0, 8, f"Semanas: {sem_val}", ln=True)
+        pdf.cell(0, 8, f"Salario: ${sal_val:,.2f}", ln=True)
+        pdf.cell(0, 8, f"Edad de retiro: {edad_retiro} años", ln=True)
+        pdf.cell(0, 8, f"Pensión estimada: ${p_futura:,.2f}", ln=True)
+        st.download_button("📥 Guardar PDF", bytes(pdf.output()), "Reporte_Pension.pdf", "application/pdf")
 
 # ============================================
 # PESTAÑA 2: MODALIDAD 40
